@@ -1,0 +1,5 @@
+Day 1. 
+Experiment 1
+Electrodes positions: 1 2 3 4 15 15.5 16 7b 8b 
+plain – last 2 mins of record - no activity (artifacts included)
+left_mov – last 2 mins of record – 1 min left hand movement, 1 min imagining left movement 
