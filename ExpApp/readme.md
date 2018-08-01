@@ -1,3 +1,3 @@
 ### Application for experimental data collection
 
-![Alt text](screen.jpg?raw=true "Title")
+![Alt text](https://github.com/kshatilov/CNB/blob/master/ExpApp/screen.JPG)
