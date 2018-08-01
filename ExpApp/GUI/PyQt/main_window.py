@@ -179,8 +179,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
-        # mock = False
-        mock = True
+        mock = False
+        # mock = True
         if mock:
             reader = ReadSample()
             sample = reader.read_sample()
