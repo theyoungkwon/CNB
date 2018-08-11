@@ -67,7 +67,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button.clicked.connect(lambda: self.start_record())
         self.record_time_input = QDoubleSpinBox()
         self.record_count = 1
-        self.record_time_input.setValue(self.exp_params.record_time)
+        self.record_time_input.setValue(self.exp_params.record_attempt)
         self.record_time_input.setSingleStep(0.1)
         self.record_time_input.valueChanged.connect(self.set_record_time)
         self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
@@ -148,7 +148,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.exp_params.name_prefix = self.exp_name_prefix_input.text()
 
     def set_record_time(self):
-        self.exp_params.record_time = self.record_time_input.value()
+        self.exp_params.record_attempt = self.record_time_input.value()
 
     def start_record(self):
         t = threading.Timer(self.record_time, lambda: self.stop_record())
@@ -179,8 +179,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
-        mock = False
-        # mock = True
+        # mock = False
+        mock = True
         if mock:
             reader = ReadSample()
             sample = reader.read_sample()

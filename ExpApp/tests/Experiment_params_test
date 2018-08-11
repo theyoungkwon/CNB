@@ -1,0 +1,7 @@
+from ExpApp.Utils.ExperimentParams import ExperimentParams
+
+if __name__ == '__main__':
+    ep = ExperimentParams()
+    print(ep.to_file_name())
+    ep.from_file_name(ep.to_file_name())
+    print(ep.to_file_name())
