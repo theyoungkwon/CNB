@@ -82,6 +82,13 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_layout.addWidget(QLabel("File Name Prefix: "), cpr, 0, 1, 1)
         self.control_panel_layout.addWidget(self.exp_name_prefix_input, cpr, 1, 1, 2)
         cpr += 1
+        # Subject id
+        self.exp_subject_id_prefix_input = QLineEdit()
+        self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
+        self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
+        self.control_panel_layout.addWidget(QLabel("Subject: "), cpr, 0, 1, 1)
+        self.control_panel_layout.addWidget(self.exp_subject_id_prefix_input, cpr, 1, 1, 2)
+        cpr += 1
         # Gender
         self.control_panel_layout.addWidget(QLabel("Gender:"), cpr, 0, 1, 1)
         self.exp_m_input = QRadioButton("male")
@@ -147,11 +154,15 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def set_exp_name(self):
         self.exp_params.name_prefix = self.exp_name_prefix_input.text()
 
+    def set_exp_subject(self):
+        self.exp_params.subject_id = self.exp_subject_id_prefix_input.text()
+
     def set_record_time(self):
         self.exp_params.record_attempt = self.record_time_input.value()
 
     def start_record(self):
-        t = threading.Timer(self.record_time, lambda: self.stop_record())
+        # TODO debug timer
+        t = threading.Timer(int(self.exp_params.record_time), lambda: self.stop_record())
         self.is_recording = True
         self.record_button.setDisabled(True)
         t.start()

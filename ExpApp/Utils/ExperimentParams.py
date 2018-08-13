@@ -2,7 +2,7 @@ import random
 from time import strftime, gmtime
 
 from ExpApp.Utils.constants import DEFAULT_AGE, DEFAULT_RECORD_ATTEMPT, DEFAULT_GENDER, DEFAULT_NAME_PREFIX, \
-    DEFAULT_ELECTRODES, _FLASH, _FACES
+    DEFAULT_ELECTRODES, _FLASH, _FACES, DEFAULT_SUBJECT
 
 DELIM = '_'
 
@@ -15,6 +15,7 @@ class ExperimentParams:
         self.experiment = _FLASH
         self.gender = DEFAULT_GENDER
         self.options = [_FLASH, _FACES]
+        self.subject_id = DEFAULT_SUBJECT
         self.electrodes = DEFAULT_ELECTRODES
         self.record_attempt = DEFAULT_RECORD_ATTEMPT
         self.name_prefix = DEFAULT_NAME_PREFIX
@@ -29,7 +30,8 @@ class ExperimentParams:
                + self.record_time + DELIM \
                + self.gender + DELIM \
                + str(self.age) + DELIM \
-               + self.electrodes
+               + self.electrodes + DELIM \
+               + self.subject_id
 
     def from_file_name(self, file_name):
         self.name_prefix, \
@@ -39,5 +41,6 @@ class ExperimentParams:
             self.record_time, \
             self.gender, \
             self.age, \
-            self.electrodes \
+            self.electrodes, \
+            self.subject_id \
             = file_name.split(DELIM)
