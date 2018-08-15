@@ -1,5 +1,7 @@
 import datetime
 
+from ExpApp.Utils.constants import FILE_LOCATION
+
 
 class Recorder:
 
@@ -11,6 +13,7 @@ class Recorder:
         self.file_name = file_name
         print("Recording samples to file: " + file_name)
         self.samples = []
+        self.file = open(FILE_LOCATION + self.file_name, 'w')
 
     def start(self):
         pass
@@ -20,3 +23,7 @@ class Recorder:
 
     def stop(self):
         print("Flushing data to the file: " + self.file_name)
+        for sample in self.samples:
+            self.file.write(str(sample))
+            self.file.write('\n')
+        self.file.close()

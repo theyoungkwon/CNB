@@ -9,12 +9,18 @@ from ExpApp.API.Connector import Connector
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
-from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y
+from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, _FACES, MAX_RECORD_DURATION, _EC, _EO
 from ExpApp.tests.read_sample import ReadSample
+
+RESUME_GRAPH = 'Resume graph'
+PAUSE_GRAPH = "Pause graph"
 
 matplotlib.use("Qt4Agg")
 import time
 import threading
+
+# mock = False
+mock = True
 
 
 class CustomMainWindow(QtWidgets.QMainWindow):
@@ -27,6 +33,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
+        self.options = [_FLASH, _FACES, _EO, _EC]
 
         # Default parameters
         self.exp_params = ExperimentParams()
@@ -56,7 +63,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.main_layout.addWidget(self.control_panel_frame, cpr, graph_col_span, 1, 3)
 
         # Pause button
-        self.pause_button = QPushButton('Pause graph')
+        self.pause_button = QPushButton(PAUSE_GRAPH)
         self.is_paused = False
         self.pause_button.clicked.connect(lambda: self.pause_graphs())
         self.control_panel_layout.addWidget(self.pause_button, cpr, 0, 1, 3)
@@ -67,11 +74,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button.clicked.connect(lambda: self.start_record())
         self.record_time_input = QDoubleSpinBox()
         self.record_count = 1
-        self.record_time_input.setValue(self.exp_params.record_attempt)
+        self.record_time_input.setValue(self.exp_params.record_duration)
         self.record_time_input.setSingleStep(0.1)
+        self.record_time_input.setMaximum(MAX_RECORD_DURATION)
         self.record_time_input.valueChanged.connect(self.set_record_time)
+        self.record_countdown = QLabel("")
         self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
-        self.control_panel_layout.addWidget(self.record_button, cpr, 1, 1, 2)
+        self.control_panel_layout.addWidget(self.record_countdown, cpr, 1, 1, 1)
+        self.control_panel_layout.addWidget(self.record_button, cpr, 2, 1, 1)
         cpr += 1
 
         # Experiment setup panel
@@ -117,7 +127,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         # Experiment selection
         self.exp_selection_box = QComboBox()
-        self.exp_selection_box.addItems(self.exp_params.options)
+        self.exp_selection_box.addItems(self.options)
         self.exp_selection_box.currentIndexChanged.connect(self.set_exp)
         self.exp_run_button = QPushButton("Run")
         self.exp_run_button.clicked.connect(self.exp_run)
@@ -136,6 +146,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def exp_run(self):
         file_name = self.exp_params.to_file_name()
         self.recorder = Recorder(file_name)
+        self.is_recording = True
         self.exp_params.exp_id += 1
 
         # Run experiment window separately
@@ -158,31 +169,37 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.exp_params.subject_id = self.exp_subject_id_prefix_input.text()
 
     def set_record_time(self):
-        self.exp_params.record_attempt = self.record_time_input.value()
+        self.exp_params.record_duration = self.record_time_input.value()
+
+    def looper(self, time_left):
+        if time_left < 0: return
+        self.record_countdown.setText('%5.1f' % time_left + " s")
+        interval = 0.5
+        threading.Timer(interval, lambda: self.looper(time_left - interval)).start()
 
     def start_record(self):
-        # TODO debug timer
-        t = threading.Timer(int(self.exp_params.record_time), lambda: self.stop_record())
+        t = threading.Timer(int(self.exp_params.record_duration), lambda: self.stop_record())
+        self.looper(self.exp_params.record_duration)
         self.is_recording = True
-        self.record_button.setDisabled(True)
+        self.record_button.setDisabled(self.is_recording)
+        self.exp_params.experiment = 'Record'
+        self.recorder = Recorder(self.exp_params.to_file_name())
         t.start()
-        # record
 
     def stop_record(self):
         self.is_recording = False
-        self.record_button.setDisabled(False)
-        self.record_count = self.record_count + 1
+        self.record_button.setDisabled(self.is_recording)
+        self.exp_params.exp_id += 1
         self.recorder.stop()
 
     def pause_graphs(self):
         self.is_paused = not self.is_paused
-        self.pause_button.setText('Resume graph' if self.is_paused else 'Pause graph')
+        self.pause_button.setText(RESUME_GRAPH if self.is_paused else PAUSE_GRAPH)
 
     def add_data_callback_func(self, value):
         if not self.is_paused:
             self.myFig.addData(value)
         if self.is_recording:
-            self.recorder = Recorder()  # TODO change
             self.recorder.record_sample(value)
 
     def data_handler(self, sample):
@@ -190,8 +207,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
-        # mock = False
-        mock = True
         if mock:
             reader = ReadSample()
             sample = reader.read_sample()
