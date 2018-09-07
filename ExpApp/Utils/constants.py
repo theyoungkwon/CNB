@@ -25,4 +25,11 @@ _FLASH = 'Flashes'
 _FACES = 'Faces'
 _EO = 'EO'
 _EC = 'EC'
+_SSVEP = 'SSVEP'
+
+# Experiment constants
+EP_EO_DURATION = 3.
+EP_SSVEP_DURATION = 10.
+EP_FACES_DURATION = 10.
+EP_FLASH_RECORD_DURATION = 5.
 

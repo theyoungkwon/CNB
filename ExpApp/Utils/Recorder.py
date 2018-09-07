@@ -22,7 +22,7 @@ class Recorder:
         self.samples.append(sample)
 
     def stop(self):
-        print("Flushing data to the file: " + self.file_name)
+        print("Flushing " + str(len(self.samples)) + " records  to the file: " + self.file_name)
         for sample in self.samples:
             self.file.write(str(sample))
             self.file.write('\n')
