@@ -7,9 +7,9 @@ from ExpApp.API.openbci import OpenBCISample
 
 class ReadSample:
 
-    def __init__(self) -> None:
+    def __init__(self, filename="sample_data.csv") -> None:
         super().__init__()
-        self.file = pkg_resources.resource_stream(__name__, "sample_data.csv")
+        self.file = pkg_resources.resource_stream(__name__, filename)
 
     def read_sample(self):
         line = self.file.readline()
@@ -22,6 +22,15 @@ class ReadSample:
         sample_.channel_data = raw_sample[2:10]
 
         return sample_
+
+    def read_stream(self):
+        stream = []
+        sample_ = self.read_sample()
+        stream.append(sample_)
+        while sample_ is not None:
+            sample_ = reader.read_sample()
+            stream.append(sample_)
+        return stream
 
 
 if __name__ == '__main__':
