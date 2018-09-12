@@ -6,6 +6,8 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRadioButton, QSpinBox, QComboBox
 
 from ExpApp.API.Connector import Connector
+
+from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils.ExperimentParams import ExperimentParams
@@ -160,13 +162,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def exp_run(self):
         # Flash
-        if self.exp_params.experiment is _FLASH:
+        if self.exp_params.experiment == _FLASH:
+            print("apapa")
             self.exp_params.record_duration = EP_FLASH_RECORD_DURATION
             self.start_record()
-            self.flash_window.showFullScreen()
-            self.exp_window = self.flash_window
+            self.exp_window = FlashWindow()
+            self.exp_window.showFullScreen()
         # EO / EC
-        elif self.exp_params.experiment is _EC or self.exp_params.experiment is _EO:
+        elif self.exp_params.experiment == _EC or self.exp_params.experiment == _EO:
             self.exp_params.record_duration = EP_EO_DURATION
             self.start_record()
         # SSVEP
@@ -177,11 +180,10 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.start_record()
             self.exp_window.showFullScreen()
         # Faces
-        elif self.exp_params.experiment is _FACES:
+        elif self.exp_params.experiment == _FACES:
             self.exp_params.record_duration = EP_FACES_DURATION
             self.start_record()
             self.faces_window.showFullScreen()
-            self.exp_window = self.faces_window
 
     def start_record_(self):
         self.exp_params.experiment = 'Record'
