@@ -7,10 +7,11 @@ from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRad
 
 from ExpApp.API.Connector import Connector
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
+from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, _FACES, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
-    EP_FLASH_RECORD_DURATION, _SSVEP, EP_SSVEP_DURATION, EP_FACES_DURATION
+    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, EP_FACES_DURATION, _SSVEP30, _SSVEP20
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -34,15 +35,32 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
-        self.options = [_FLASH, _FACES, _EO, _EC, _SSVEP]
+        self.options = [
+            _SSVEP10,
+            _SSVEP20,
+            _SSVEP30,
+            _FLASH,
+            _FACES,
+            _EO,
+            _EC
+        ]
 
         # Default parameters
         self.exp_params = ExperimentParams()
+        self.exp_params.experiment = self.options[0]
 
         self.main_widget = QtWidgets.QWidget()
         self.main_layout = QtWidgets.QGridLayout()
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
+
+        # Experiment window
+        # self.flash_window = QtWidgets.QMdiSubWindow(self)
+        # self.ssvep_windows = [,
+        #                       SSVEPWindow(1000 / 20, parent=self),
+        #                       SSVEPWindow(1000 / 30, parent=self)]
+        # self.faces_window = QtWidgets.QMdiSubWindow()
+        self.exp_window = None
 
         # Create graph frame
         graph_col_span = 8
@@ -72,7 +90,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
         # Record panel
         self.record_button = QPushButton('Record')
-        self.record_button.clicked.connect(lambda: self.start_record())
+        self.record_button.clicked.connect(lambda: self.start_record_())
         self.record_time_input = QDoubleSpinBox()
         self.record_count = 1
         self.record_time_input.setValue(self.exp_params.record_duration)
@@ -135,11 +153,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_layout.addWidget(self.exp_run_button, cpr, 0, 1, 1)
         self.control_panel_layout.addWidget(self.exp_selection_box, cpr, 1, 1, 2)
 
-        # Experiment window
-        self.flash_window = QtWidgets.QMdiSubWindow()
-        self.ssvep_window = QtWidgets.QMdiSubWindow()
-        self.faces_window = QtWidgets.QMdiSubWindow()
-
         self.show()
 
     def set_exp(self):
@@ -151,20 +164,28 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = EP_FLASH_RECORD_DURATION
             self.start_record()
             self.flash_window.showFullScreen()
+            self.exp_window = self.flash_window
         # EO / EC
         elif self.exp_params.experiment is _EC or self.exp_params.experiment is _EO:
             self.exp_params.record_duration = EP_EO_DURATION
             self.start_record()
         # SSVEP
-        elif self.exp_params.experiment is _SSVEP:
+        elif self.exp_params.experiment[:5] == "SSVEP":
+            freq = int(self.exp_params.experiment[5:7])
+            self.exp_window = SSVEPWindow(freq=(1000 / freq))
             self.exp_params.record_duration = EP_SSVEP_DURATION
             self.start_record()
-            self.ssvep_window.showFullScreen()
+            self.exp_window.showFullScreen()
         # Faces
         elif self.exp_params.experiment is _FACES:
             self.exp_params.record_duration = EP_FACES_DURATION
             self.start_record()
             self.faces_window.showFullScreen()
+            self.exp_window = self.faces_window
+
+    def start_record_(self):
+        self.exp_params.experiment = 'Record'
+        self.start_record()
 
     def set_electrodes(self):
         self.exp_params.electrodes = self.exp_electrodes_input.text()
@@ -196,7 +217,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.looper(self.exp_params.record_duration)
         self.is_recording = True
         self.record_button.setDisabled(self.is_recording)
-        self.exp_params.experiment = 'Record'
         self.recorder = Recorder(self.exp_params.to_file_name())
         self.exp_params.exp_id += 1
         t.start()
@@ -206,6 +226,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button.setDisabled(self.is_recording)
         self.exp_params.exp_id += 1
         self.recorder.stop()
+        if self.exp_window is not None:
+            del self.exp_window
 
     def pause_graphs(self):
         self.is_paused = not self.is_paused
