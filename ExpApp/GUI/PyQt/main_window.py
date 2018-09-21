@@ -9,11 +9,13 @@ from ExpApp.API.Connector import Connector
 
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
+from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
-from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, _FACES, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
-    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, EP_FACES_DURATION, _SSVEP30, _SSVEP20
+from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
+    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
+    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -38,11 +40,11 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
         self.options = [
+            _PINCODE_4_TRUE_SEQ_REP_3,
             _SSVEP10,
             _SSVEP20,
             _SSVEP30,
             _FLASH,
-            _FACES,
             _EO,
             _EC
         ]
@@ -57,11 +59,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.main_widget)
 
         # Experiment window
-        # self.flash_window = QtWidgets.QMdiSubWindow(self)
-        # self.ssvep_windows = [,
-        #                       SSVEPWindow(1000 / 20, parent=self),
-        #                       SSVEPWindow(1000 / 30, parent=self)]
-        # self.faces_window = QtWidgets.QMdiSubWindow()
         self.exp_window = None
 
         # Create graph frame
@@ -163,7 +160,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
     def exp_run(self):
         # Flash
         if self.exp_params.experiment == _FLASH:
-            print("apapa")
             self.exp_params.record_duration = EP_FLASH_RECORD_DURATION
             self.start_record()
             self.exp_window = FlashWindow()
@@ -179,11 +175,13 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = EP_SSVEP_DURATION
             self.start_record()
             self.exp_window.showFullScreen()
-        # Faces
-        elif self.exp_params.experiment == _FACES:
-            self.exp_params.record_duration = EP_FACES_DURATION
+        elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
+            true_seq = [1, 4, 8, 8]
+            self.exp_window = PinCodeWindow(sequence=true_seq, repetitions=3)
+            self.exp_params.record_duration = (len(true_seq) + 1) * PINCODE_FLASH_INTERVAL / 1000
+            print(self.exp_params.record_duration)
             self.start_record()
-            self.faces_window.showFullScreen()
+            self.exp_window.showFullScreen()
 
     def start_record_(self):
         self.exp_params.experiment = 'Record'

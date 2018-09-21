@@ -2,7 +2,7 @@ import random
 from time import strftime, gmtime
 
 from ExpApp.Utils.constants import DEFAULT_AGE, DEFAULT_RECORD_DURATION, DEFAULT_GENDER, DEFAULT_NAME_PREFIX, \
-    DEFAULT_ELECTRODES, _FLASH, _FACES, DEFAULT_SUBJECT
+    DEFAULT_ELECTRODES, _FLASH, DEFAULT_SUBJECT
 
 DELIM = '_'
 
