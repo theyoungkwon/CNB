@@ -17,7 +17,8 @@ from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
-    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET
+    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
+    PINCODE_LENGTH
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -27,8 +28,8 @@ matplotlib.use("Qt4Agg")
 import time
 import threading
 
-# mock = False
-mock = True
+mock = False
+# mock = True
 
 
 # TODO add timestamp to record
@@ -181,15 +182,15 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_window.showFullScreen()
         # PINCODE TRUE SEQ
         elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
-            true_seq = [1, 4, 8, 8]
-            repetitions = 3
+            true_seq = PINCODE_TRUE_SEQ
+            repetitions = PINCODE_REPETITIONS
             self.exp_window = PinCodeWindow(sequence=true_seq, repetitions=repetitions)
             self.exp_params.record_duration = ((len(true_seq) + 1) * PINCODE_FLASH_INTERVAL / 1000) * repetitions
             self.start_record()
             self.exp_window.showFullScreen()
         # P300 Secret
         elif self.exp_params.experiment == _P300_SECRET:
-            length = 4
+            length = PINCODE_LENGTH
             self.exp_window = P300SecretSpeller(length=length)
             self.exp_params.record_duration = (9 * PINCODE_FLASH_INTERVAL / 1000) * length
             self.start_record()
@@ -238,8 +239,9 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button.setDisabled(self.is_recording)
         self.exp_params.exp_id += 1
         self.recorder.stop()
-        if self.exp_window is not None:
+        if hasattr(self, "exp_window ") and self.exp_window is not None:
             del self.exp_window
+            self.exp_window = None
 
     def pause_graphs(self):
         self.is_paused = not self.is_paused
@@ -252,7 +254,10 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.recorder.record_sample(value)
 
     def data_handler(self, sample):
-        self.communicator.data_signal.emit(sample.channel_data)
+        timestamp = time.time()
+        value = sample.channel_data
+        value.append(timestamp)
+        self.communicator.data_signal.emit(value)
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
