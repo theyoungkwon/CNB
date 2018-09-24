@@ -10,13 +10,14 @@ from openbci import OpenBCISample
 
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
+from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
-    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL
+    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -43,6 +44,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
         self.options = [
             _PINCODE_4_TRUE_SEQ_REP_3,
+            _P300_SECRET,
             _SSVEP10,
             _SSVEP20,
             _SSVEP30,
@@ -177,12 +179,19 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = EP_SSVEP_DURATION
             self.start_record()
             self.exp_window.showFullScreen()
+        # PINCODE TRUE SEQ
         elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
             true_seq = [1, 4, 8, 8]
             repetitions = 3
             self.exp_window = PinCodeWindow(sequence=true_seq, repetitions=repetitions)
             self.exp_params.record_duration = ((len(true_seq) + 1) * PINCODE_FLASH_INTERVAL / 1000) * repetitions
-            print(self.exp_params.record_duration)
+            self.start_record()
+            self.exp_window.showFullScreen()
+        # P300 Secret
+        elif self.exp_params.experiment == _P300_SECRET:
+            length = 4
+            self.exp_window = P300SecretSpeller(length=length)
+            self.exp_params.record_duration = (9 * PINCODE_FLASH_INTERVAL / 1000) * length
             self.start_record()
             self.exp_window.showFullScreen()
 
