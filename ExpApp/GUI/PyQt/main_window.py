@@ -29,6 +29,7 @@ import threading
 mock = True
 
 
+# TODO add timestamp to record
 class CustomMainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -177,8 +178,9 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_window.showFullScreen()
         elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
             true_seq = [1, 4, 8, 8]
-            self.exp_window = PinCodeWindow(sequence=true_seq, repetitions=3)
-            self.exp_params.record_duration = (len(true_seq) + 1) * PINCODE_FLASH_INTERVAL / 1000
+            repetitions = 3
+            self.exp_window = PinCodeWindow(sequence=true_seq, repetitions=repetitions)
+            self.exp_params.record_duration = ((len(true_seq) + 1) * PINCODE_FLASH_INTERVAL / 1000) * repetitions
             print(self.exp_params.record_duration)
             self.start_record()
             self.exp_window.showFullScreen()
