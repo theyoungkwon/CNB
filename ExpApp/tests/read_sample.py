@@ -15,9 +15,12 @@ class ReadSample:
         line = self.file.readline()
         if len(line) <= 0:
             return None
+        line = line.strip()
+        line = line.rstrip()
+
         sample_ = OpenBCISample()
         raw_sample = str(line).split(',')
-        sample_.timestamp = raw_sample[0]
+        sample_.timestamp = raw_sample[0][2:]
         sample_.id = raw_sample[1]
         sample_.channel_data = raw_sample[2:10]
 
