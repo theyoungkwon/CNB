@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRadioButton, QSpinBox, QComboBox
 
 from ExpApp.API.Connector import Connector
+from openbci import OpenBCISample
 
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
@@ -253,6 +254,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             while sample is not None:
                 time.sleep(1. / 255.)
                 value = sample.channel_data
+                value.append(sample.timestamp)
                 self.communicator.data_signal.emit(value)
                 sample = reader.read_sample()
         else:
