@@ -10,6 +10,7 @@ from openbci import OpenBCISample
 
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
+from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow
 from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
@@ -18,7 +19,7 @@ from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH
+    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -46,6 +47,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.options = [
             _PINCODE_4_TRUE_SEQ_REP_3,
             _P300_SECRET,
+            _MOTOR_IMG,
             _SSVEP10,
             _SSVEP20,
             _SSVEP30,
@@ -195,6 +197,12 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = (9 * PINCODE_FLASH_INTERVAL / 1000) * length
             self.start_record()
             self.exp_window.showFullScreen()
+        # MOTOR IMG
+        elif self.exp_params.experiment == _MOTOR_IMG:
+            self.exp_window = MotorImgWindow()
+            self.exp_params.record_duration = (IMG_EVENT_INTERVAL / 1000 * (IMG_EVENT_REPETITIONS * 2 + 1))
+            self.start_record()
+            self.exp_window.showFullScreen()
 
     def start_record_(self):
         self.exp_params.experiment = 'Record'
@@ -239,7 +247,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.record_button.setDisabled(self.is_recording)
         self.exp_params.exp_id += 1
         self.recorder.stop()
-        if hasattr(self, "exp_window ") and self.exp_window is not None:
+        if self.exp_window is not None:
             del self.exp_window
             self.exp_window = None
 
