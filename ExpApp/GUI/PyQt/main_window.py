@@ -1,4 +1,6 @@
+import getopt
 import sys
+from enum import Enum
 
 import matplotlib
 import myo
@@ -21,7 +23,7 @@ from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, EEG_MOCK, EEG, EMG, EMG_MOCK
+    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -31,18 +33,22 @@ matplotlib.use("Qt4Agg")
 import time
 import threading
 
-# mock = False
-mock = True
+
+class Device(Enum):
+    EEG = 1,
+    EMG = 2
 
 
 # TODO add timestamp to record
 class CustomMainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self):
+    def __init__(self, device=Device.EEG, mock=False):
         super(CustomMainWindow, self).__init__()
         self.communicator = Communicate()
         self.is_recording = False
         self.recorder = None
+        self.device = device
+        self.mock = mock
 
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
@@ -271,33 +277,22 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
-        if EEG:
-            if EEG_MOCK:
-                reader = ReadSample()
-                sample = reader.read_sample()
+        if self.mock:
+            file_name = "EEGMOCK" if self.device == Device.EEG else "EMGMOCK"
+            reader = ReadSample(file_name)
+            sample = reader.read_sample()
 
-                while sample is not None:
-                    time.sleep(1. / 255.)
-                    value = sample.channel_data
-                    value.append(sample.timestamp)
-                    self.communicator.data_signal.emit(value)
-                    sample = reader.read_sample()
-            else:
+            while sample is not None:
+                time.sleep(1. / 255.)
+                value = sample.channel_data
+                value.append(sample.timestamp)
+                self.communicator.data_signal.emit(value)
+                sample = reader.read_sample()
+        else:
+            if self.device == Device.EEG:
                 board = OBCIConnector()
                 board.attach_handlers(self.data_handler)
-        elif EMG:
-            if EMG_MOCK:
-                file_name = "EMGMOCK"
-                reader = ReadSample(file_name)
-                sample = reader.read_sample()
-
-                while sample is not None:
-                    time.sleep(1. / 255.)
-                    value = sample.channel_data
-                    value.append(sample.timestamp)
-                    self.communicator.data_signal.emit(value)
-                    sample = reader.read_sample()
-            else:
+            elif self.device == Device.EMG:
                 EMGConnector(self.communicator)
 
 
@@ -309,8 +304,19 @@ def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 
+# command line options
+# -d EEG/EMG device choice
+# -m mock. If present files EMGMOCK and EEGMOCK are going to used
 if __name__ == '__main__':
+    opts, args = getopt.getopt(sys.argv[1:], "md:")
+    device = Device.EEG
+    mock = False
+    for option, value in opts:
+        if option == "-d":
+            device = Device[value]
+        elif option == "-m":
+            mock = True
     sys.excepthook = except_hook
     app = QtWidgets.QApplication(sys.argv)
-    myGUI = CustomMainWindow()
+    myGUI = CustomMainWindow(device, mock)
     sys.exit(app.exec_())

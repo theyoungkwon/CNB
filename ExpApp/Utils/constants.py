@@ -1,14 +1,3 @@
-# Main Config -- Should be done with cmd line arguments
-# EEG = True
-EEG = False
-# EEG_MOCK = False
-EEG_MOCK = True
-
-EMG = True
-# EMG = False
-# EMG_MOCK = False
-EMG_MOCK = True
-
 CHANNELS_NUMBER = 8
 FILE_LOCATION = '../../../data/app/'  # FIle directory
 
