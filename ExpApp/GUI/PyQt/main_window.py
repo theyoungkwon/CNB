@@ -29,8 +29,8 @@ matplotlib.use("Qt4Agg")
 import time
 import threading
 
-mock = False
-# mock = True
+# mock = False
+mock = True
 
 
 # TODO add timestamp to record
