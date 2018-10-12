@@ -1,4 +1,4 @@
-from ExpApp.API.Connector import Connector
+from ExpApp.API.OBCIConnector import OBCIConnector
 from ExpApp.Utils.constants import CHANNELS_NUMBER, GRAPH_PROPORTION
 
 import sys
@@ -163,7 +163,7 @@ def dataSendLoop(addData_callbackFunc):
     #     communicator.data_signal.emit(value)
     #     sample = reader.read_sample()
 
-    board = Connector()
+    board = OBCIConnector()
     board.attach_handlers(lambda sample: communicator.data_signal.emit(sample.channel_data))
 
 

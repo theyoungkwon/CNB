@@ -1,13 +1,15 @@
 import sys
 
 import matplotlib
+import myo
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRadioButton, QSpinBox, QComboBox
 
-from ExpApp.API.Connector import Connector
+from ExpApp.API.OBCIConnector import OBCIConnector
 from openbci import OpenBCISample
 
+from EMG.EMGConnector import EMGConnector
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow
@@ -19,7 +21,7 @@ from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL
+    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, EEG_MOCK, EEG, EMG, EMG_MOCK
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -269,19 +271,34 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
     def data_send_loop(self, add_data_callback_func):
         self.communicator.data_signal.connect(add_data_callback_func)
-        if mock:
-            reader = ReadSample()
-            sample = reader.read_sample()
-
-            while sample is not None:
-                time.sleep(1. / 255.)
-                value = sample.channel_data
-                value.append(sample.timestamp)
-                self.communicator.data_signal.emit(value)
+        if EEG:
+            if EEG_MOCK:
+                reader = ReadSample()
                 sample = reader.read_sample()
-        else:
-            board = Connector()
-            board.attach_handlers(self.data_handler)
+
+                while sample is not None:
+                    time.sleep(1. / 255.)
+                    value = sample.channel_data
+                    value.append(sample.timestamp)
+                    self.communicator.data_signal.emit(value)
+                    sample = reader.read_sample()
+            else:
+                board = OBCIConnector()
+                board.attach_handlers(self.data_handler)
+        elif EMG:
+            if EMG_MOCK:
+                file_name = "EMGMOCK"
+                reader = ReadSample(file_name)
+                sample = reader.read_sample()
+
+                while sample is not None:
+                    time.sleep(1. / 255.)
+                    value = sample.channel_data
+                    value.append(sample.timestamp)
+                    self.communicator.data_signal.emit(value)
+                    sample = reader.read_sample()
+            else:
+                EMGConnector(self.communicator)
 
 
 class Communicate(QtCore.QObject):

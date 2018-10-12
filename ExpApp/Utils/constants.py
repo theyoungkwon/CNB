@@ -1,5 +1,16 @@
+# Main Config -- Should be done with cmd line arguments
+# EEG = True
+EEG = False
+# EEG_MOCK = False
+EEG_MOCK = True
+
+EMG = True
+# EMG = False
+# EMG_MOCK = False
+EMG_MOCK = True
+
 CHANNELS_NUMBER = 8
-FILE_LOCATION = '../../../data/app/'
+FILE_LOCATION = '../../../data/app/'  # FIle directory
 
 # GUI constants
 WINDOW_X = 1600
@@ -15,7 +26,7 @@ GRAPH_PROPORTION = 0.1  # set y axis as 2 * GRAPH_PROPORTION * current_value
 DEFAULT_AGE = 25
 DEFAULT_ELECTRODES = "[O1, O2, FP1, FP2, C3, C4, P7, P8]"
 DEFAULT_GENDER = "male"
-DEFAULT_NAME_PREFIX = "rec"
+DEFAULT_NAME_PREFIX = "EEG"
 DEFAULT_RECORD_DURATION = 10.
 DEFAULT_SUBJECT = "patient0"
 MAX_RECORD_DURATION = 280.

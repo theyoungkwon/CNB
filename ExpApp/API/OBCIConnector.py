@@ -5,7 +5,7 @@ from ExpApp.API.openbci import cyton as bci
 import time
 
 
-class Connector:
+class OBCIConnector:
     def __init__(self, port='COM3'):
         self.board = bci.OpenBCICyton(port=port, scaled_output=False, log=True)
         time.sleep(10)

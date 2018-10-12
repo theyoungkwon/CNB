@@ -1,5 +1,6 @@
 import time
 
+import numpy
 import pkg_resources
 
 from ExpApp.API.openbci import OpenBCISample
@@ -8,34 +9,20 @@ from ExpApp.API.openbci import OpenBCISample
 class ReadSample:
 
     def __init__(self,
-                 filename="SAMPLE100.txt") -> None:
+                 filename="EEGMOCK") -> None:
         super().__init__()
-        self.file = pkg_resources.resource_stream(__name__, filename)
+        self.array = numpy.loadtxt(filename)
+        self.index = 0
 
     def read_sample(self):
-        line = self.file.readline()
-        if len(line) <= 0:
+        if self.index >= len(self.array):
             return None
-        line = line.strip()
-        line = line.rstrip()
-
-        sample_ = OpenBCISample()
-        raw_sample = str(line).split(',')
-        sample_.timestamp = raw_sample[0][2:]
-        sample_.id = raw_sample[1]
-        sample_.channel_data = raw_sample[2:10]
-
-        return sample_
-
-    def read_stream(self):
-        stream = []
-        sample_ = self.read_sample()
-        stream.append(sample_)
-        while sample_ is not None:
-            sample_ = reader.read_sample()
-            stream.append(sample_)
-        return stream
-
+        raw = self.array[self.index]
+        self.index += 1
+        _sample = OpenBCISample()
+        _sample.timestamp = raw[len(raw) - 1].tolist()
+        _sample.channel_data = raw[:len(raw) - 1].tolist()
+        return _sample
 
 
 if __name__ == '__main__':
