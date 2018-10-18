@@ -3,13 +3,11 @@ import sys
 from enum import Enum
 
 import matplotlib
-import myo
+from ExpApp.API.OBCIConnector import OBCIConnector
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QThreadPool, QThread
 from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRadioButton, QSpinBox, QComboBox
-
-from ExpApp.API.OBCIConnector import OBCIConnector
-from openbci import OpenBCISample
 
 from EMG.EMGConnector import EMGConnector
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
@@ -17,13 +15,17 @@ from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow
 from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
+from ExpApp.GUI.PyQt.Widgets.ssvep_pin import SSVEP_PincodeWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
+from ExpApp.Utils import Worker
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
+from ExpApp.Utils.Worker import _run_thread
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL
+    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
+    SEQUENCE_LENGTH
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -50,14 +52,18 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.device = device
         self.mock = mock
 
+        self.threadpool = QThreadPool()
+
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
         self.options = [
             _PINCODE_4_TRUE_SEQ_REP_3,
             _P300_SECRET,
             _MOTOR_IMG,
+            _SSVEP_PIN,
             _SSVEP10,
             _SSVEP20,
+            _SSVEP25,
             _SSVEP30,
             _FLASH,
             _EO,
@@ -183,6 +189,12 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         elif self.exp_params.experiment == _EC or self.exp_params.experiment == _EO:
             self.exp_params.record_duration = EP_EO_DURATION
             self.start_record()
+        # SSVEP PINCODE
+        elif self.exp_params.experiment == _SSVEP_PIN:
+            self.exp_window = SSVEP_PincodeWindow()
+            self.exp_params.record_duration = SEQUENCE_LENGTH * INPUT_DURATION / 1000
+            self.start_record()
+            self.exp_window.showFullScreen()
         # SSVEP
         elif self.exp_params.experiment[:5] == "SSVEP":
             freq = int(self.exp_params.experiment[5:7])
@@ -283,7 +295,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             sample = reader.read_sample()
 
             while sample is not None:
-                time.sleep(1. / 255.)
+                time.sleep(1. / 50.)
                 value = sample.channel_data
                 value.append(sample.timestamp)
                 self.communicator.data_signal.emit(value)
