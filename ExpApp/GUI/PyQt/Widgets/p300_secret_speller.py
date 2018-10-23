@@ -7,9 +7,14 @@ from ExpApp.Utils.constants import PINCODE_FLASH_DURATION, PINCODE_FLASH_INTERVA
 
 class P300SecretSpeller(QtWidgets.QWidget):
     def __init__(self, parent=None,
+                 repetitions=1,
+                 numbers=9,
+                 grid_size=3,
                  length=1):
         super().__init__(parent=parent)
-        self.sequence = range(1, 10)
+        self.numbers = numbers
+        self.sequence = range(1, numbers + 1)
+        self.grid_size = grid_size
         self.is_flash = False
         palette = QtGui.QPalette()
         palette.setColor(QtGui.QPalette.Background, QtCore.Qt.black)
@@ -41,7 +46,7 @@ class P300SecretSpeller(QtWidgets.QWidget):
         max_x = resolution.width()
         max_y = resolution.height()
         margin_left = (max_x - max_y) / 2
-        tile_size = max_y / 3
+        tile_size = max_y / self.grid_size
         p = 20
 
         painter = QtGui.QPainter(self)
@@ -60,9 +65,9 @@ class P300SecretSpeller(QtWidgets.QWidget):
                 painter.fillRect(index_tile, QtCore.Qt.darkRed)
                 painter.drawText(index_tile, QtCore.Qt.AlignCenter, "_")
 
-        for number in range(9):
-            x = int(number % 3) * tile_size + margin_left
-            y = int(number / 3) * tile_size
+        for number in range(self.numbers):
+            x = int(number % self.grid_size) * tile_size + margin_left
+            y = int(number / self.grid_size) * tile_size
             tile = QtCore.QRectF(x + p, y + p, tile_size - p, tile_size - p)
 
             if self.isHighlighted and self.sequence[self.index - 1] == number + 1:

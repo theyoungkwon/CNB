@@ -22,10 +22,10 @@ from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.Worker import _run_thread
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
-    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP30, _SSVEP20, \
-    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
+    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP40, _SSVEP20, \
+    _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
     PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
-    SEQUENCE_LENGTH
+    SEQUENCE_LENGTH, _P300_SECRET_4
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -58,13 +58,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
         self.options = [
             _PINCODE_4_TRUE_SEQ_REP_3,
-            _P300_SECRET,
+            _P300_SECRET_9,
+            _P300_SECRET_4,
             _MOTOR_IMG,
             _SSVEP_PIN,
             _SSVEP10,
             _SSVEP20,
             _SSVEP25,
-            _SSVEP30,
+            _SSVEP40,
             _FLASH,
             _EO,
             _EC
@@ -211,10 +212,17 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.start_record()
             self.exp_window.showFullScreen()
         # P300 Secret
-        elif self.exp_params.experiment == _P300_SECRET:
+        elif self.exp_params.experiment == _P300_SECRET_9:
             length = PINCODE_LENGTH
             self.exp_window = P300SecretSpeller(length=length)
             self.exp_params.record_duration = (9 * PINCODE_FLASH_INTERVAL / 1000) * length
+            self.start_record()
+            self.exp_window.showFullScreen()
+        elif self.exp_params.experiment == _P300_SECRET_4:
+            length = PINCODE_LENGTH
+            numbers = 4
+            self.exp_window = P300SecretSpeller(length=length, numbers=numbers, grid_size=2)
+            self.exp_params.record_duration = (numbers * PINCODE_FLASH_INTERVAL / 1000) * length
             self.start_record()
             self.exp_window.showFullScreen()
         # MOTOR IMG
