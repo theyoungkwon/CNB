@@ -6,6 +6,7 @@ from PyQt5.QtCore import QThread
 from ExpApp.Utils.constants import INPUT_DURATION, PROGRESS_UPDATE_TIME, SEQUENCE_LENGTH
 
 frequencies = [10, 20, 25, 40]
+# frequencies = [4, 5, 10, 20]
 update = 5
 
 
@@ -86,7 +87,8 @@ class SSVEP_PincodeWindow(QtWidgets.QWidget):
         self.iteration += 1
 
         if current_time == INPUT_DURATION * SEQUENCE_LENGTH:
-            sys.exit()
+            self.close()
+            self.thread().exec()
 
 
 def main():

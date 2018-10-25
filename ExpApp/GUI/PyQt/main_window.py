@@ -1,4 +1,5 @@
 import getopt
+import subprocess
 import sys
 from enum import Enum
 
@@ -20,11 +21,10 @@ from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils import Worker
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
-from ExpApp.Utils.Worker import _run_thread
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP40, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MOTOR_IMG, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
+    PINCODE_LENGTH, _MOTOR_IMG_CAL, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
     SEQUENCE_LENGTH, _P300_SECRET_4
 from ExpApp.tests.read_sample import ReadSample
 
@@ -60,7 +60,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             _PINCODE_4_TRUE_SEQ_REP_3,
             _P300_SECRET_9,
             _P300_SECRET_4,
-            _MOTOR_IMG,
+            _MOTOR_IMG_CAL,
             _SSVEP_PIN,
             _SSVEP10,
             _SSVEP20,
@@ -192,10 +192,11 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.start_record()
         # SSVEP PINCODE
         elif self.exp_params.experiment == _SSVEP_PIN:
-            self.exp_window = SSVEP_PincodeWindow()
             self.exp_params.record_duration = SEQUENCE_LENGTH * INPUT_DURATION / 1000
             self.start_record()
-            self.exp_window.showFullScreen()
+            self.exp_window = None
+            path = "C:/Users/Kirill/Documents/Study/_RESEARCH/prof. Rosa/CNB/ExpApp/GUI/PyQt/Widgets/ssvep_pin.py"
+            subprocess.Popen(["python", path])
         # SSVEP
         elif self.exp_params.experiment[:5] == "SSVEP":
             freq = int(self.exp_params.experiment[5:7])
@@ -226,7 +227,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.start_record()
             self.exp_window.showFullScreen()
         # MOTOR IMG
-        elif self.exp_params.experiment == _MOTOR_IMG:
+        elif self.exp_params.experiment == _MOTOR_IMG_CAL:
             self.exp_window = MotorImgWindow()
             self.exp_params.record_duration = (IMG_EVENT_INTERVAL / 1000 * (IMG_EVENT_REPETITIONS * 2 + 1))
             self.start_record()
@@ -324,10 +325,7 @@ def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 
-# command line options
-# -d EEG/EMG device choice
-# -m mock. If present files EMGMOCK and EEGMOCK are going to used
-if __name__ == '__main__':
+def main():
     opts, args = getopt.getopt(sys.argv[1:], "md:")
     device = Device.EEG
     mock = False
@@ -338,5 +336,13 @@ if __name__ == '__main__':
             mock = True
     sys.excepthook = except_hook
     app = QtWidgets.QApplication(sys.argv)
-    myGUI = CustomMainWindow(device, mock)
+    CustomMainWindow(device, mock)
     sys.exit(app.exec_())
+
+
+# command line options
+# -d EEG/EMG device choice
+# -m mock. If present files EMGMOCK and EEGMOCK are going to used
+if __name__ == '__main__':
+    main()
+
