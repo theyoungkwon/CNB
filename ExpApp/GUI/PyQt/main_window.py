@@ -195,7 +195,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = SEQUENCE_LENGTH * INPUT_DURATION / 1000
             self.start_record()
             self.exp_window = None
-            path = "C:/Users/Kirill/Documents/Study/_RESEARCH/prof. Rosa/CNB/ExpApp/GUI/PyQt/Widgets/ssvep_pin.py"
+            path = "./Widgets/ssvep_pin.py"
             subprocess.Popen(["python", path])
         # SSVEP
         elif self.exp_params.experiment[:5] == "SSVEP":
