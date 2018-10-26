@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRad
 from EMG.EMGConnector import EMGConnector
 from ExpApp.GUI.PyQt.Widgets.flash_window import FlashWindow
 from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
-from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow
+from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow, SEQUENCE
 from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_pin import SSVEP_PincodeWindow
@@ -24,8 +24,8 @@ from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
     EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP40, _SSVEP20, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MOTOR_IMG_CAL, IMG_EVENT_REPETITIONS, IMG_EVENT_INTERVAL, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
-    SEQUENCE_LENGTH, _P300_SECRET_4
+    PINCODE_LENGTH, _MI_CALIBRATION, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
+    SEQUENCE_LENGTH, _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -57,18 +57,18 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("ExpApp")
         self.setGeometry(100, 100, WINDOW_X, WINDOW_Y)
         self.options = [
+            _EO,
+            _EC,
             _PINCODE_4_TRUE_SEQ_REP_3,
             _P300_SECRET_9,
             _P300_SECRET_4,
-            _MOTOR_IMG_CAL,
-            _SSVEP_PIN,
+            _MI_CALIBRATION,
+            _MI_INPUT,
             _SSVEP10,
             _SSVEP20,
             _SSVEP25,
             _SSVEP40,
-            _FLASH,
-            _EO,
-            _EC
+            _SSVEP_PIN,
         ]
 
         # Default parameters
@@ -227,9 +227,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.start_record()
             self.exp_window.showFullScreen()
         # MOTOR IMG
-        elif self.exp_params.experiment == _MOTOR_IMG_CAL:
-            self.exp_window = MotorImgWindow()
-            self.exp_params.record_duration = (IMG_EVENT_INTERVAL / 1000 * (IMG_EVENT_REPETITIONS * 2 + 1))
+        elif self.exp_params.experiment == _MI_CALIBRATION:
+            self.exp_window = MotorImgWindow(sequence=SEQUENCE.CALIBRATION)
+            self.exp_params.record_duration = MI_LABELS * MI_CALIBRATION_TRIALS * TRIAL_STEPS.TRIAL_END / 1000
+            self.start_record()
+            self.exp_window.showFullScreen()
+        elif self.exp_params.experiment == _MI_INPUT:
+            self.exp_window = MotorImgWindow(sequence=SEQUENCE.INPUT)
+            self.exp_params.record_duration = MI_INPUT_LENGTH * TRIAL_STEPS.TRIAL_END / 1000
             self.start_record()
             self.exp_window.showFullScreen()
 

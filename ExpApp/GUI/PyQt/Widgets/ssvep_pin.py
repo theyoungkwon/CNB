@@ -10,13 +10,9 @@ frequencies = [10, 20, 25, 40]
 update = 5
 
 
-class SSVEP_PincodeWindow(QtWidgets.QWidget):
+class SSVEP_PincodeWindow(QtWidgets.QWidget, QtCore.QObject):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
-        # thread = QThread()
-        # thread.start(priority=QThread.HighestPriority)
-        # self.moveToThread(thread)
 
         self.is_flash = False
         palette = QtGui.QPalette()
@@ -55,7 +51,7 @@ class SSVEP_PincodeWindow(QtWidgets.QWidget):
         mid_x = max_x / 2
         mid_y = max_y / 2
         progress_display = QtCore.QRectF(mid_x - side_x / 2, mid_y - side_y / 2, side_x, side_y)
-        color = QtCore.Qt.darkRed if  self.progress > 0.9 else QtCore.Qt.darkGreen
+        color = QtCore.Qt.darkRed if self.progress > 0.9 else QtCore.Qt.darkGreen
         painter.fillRect(progress_display, color)
 
         # flickers
