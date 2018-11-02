@@ -16,16 +16,16 @@ from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow, SEQUENCE
 from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
-from ExpApp.GUI.PyQt.Widgets.ssvep_pin import SSVEP_PincodeWindow
+from ExpApp.GUI.PyQt.Widgets.ssvep_exp import SSVEPExperimentWindow
 from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
 from ExpApp.Utils import Worker
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
-    EP_FLASH_RECORD_DURATION, _SSVEP10, EP_SSVEP_DURATION, _SSVEP40, _SSVEP20, \
+    EP_FLASH_RECORD_DURATION, _SSVEP1, EP_SSVEP_DURATION, _SSVEP2, _SSVEP3, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
-    PINCODE_LENGTH, _MI_CALIBRATION, _SSVEP25, _SSVEP_PIN, INPUT_DURATION, \
-    SEQUENCE_LENGTH, _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH
+    PINCODE_LENGTH, _MI_CALIBRATION, SSVEP_TIME_WINDOW, \
+    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -61,14 +61,11 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             _EC,
             _PINCODE_4_TRUE_SEQ_REP_3,
             _P300_SECRET_9,
-            _P300_SECRET_4,
             _MI_CALIBRATION,
             _MI_INPUT,
-            _SSVEP10,
-            _SSVEP20,
-            _SSVEP25,
-            _SSVEP40,
-            _SSVEP_PIN,
+            _SSVEP1,
+            _SSVEP2,
+            _SSVEP3,
         ]
 
         # Default parameters
@@ -190,20 +187,14 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         elif self.exp_params.experiment == _EC or self.exp_params.experiment == _EO:
             self.exp_params.record_duration = EP_EO_DURATION
             self.start_record()
-        # SSVEP PINCODE
-        elif self.exp_params.experiment == _SSVEP_PIN:
-            self.exp_params.record_duration = SEQUENCE_LENGTH * INPUT_DURATION / 1000
-            self.start_record()
-            self.exp_window = None
-            path = "./Widgets/ssvep_pin.py"
-            subprocess.Popen(["python", path])
         # SSVEP
         elif self.exp_params.experiment[:5] == "SSVEP":
-            freq = int(self.exp_params.experiment[5:7])
-            self.exp_window = SSVEPWindow(freq=(1000 / freq))
-            self.exp_params.record_duration = EP_SSVEP_DURATION
+            id = int(self.exp_params.experiment[5:6]) - 1
+            self.exp_params.record_duration = SSVEP_TIME_WINDOW * len(FREQ[id]) / 1000
+            self.exp_window = None
             self.start_record()
-            self.exp_window.showFullScreen()
+            path = "./Widgets/ssvep_exp.py"
+            subprocess.Popen(["python", path, str(id)])
         # PINCODE TRUE SEQ
         elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
             true_seq = PINCODE_TRUE_SEQ
@@ -350,4 +341,3 @@ def main():
 # -m mock. If present files EMGMOCK and EEGMOCK are going to used
 if __name__ == '__main__':
     main()
-
