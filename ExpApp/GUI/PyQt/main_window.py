@@ -210,13 +210,6 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = (9 * PINCODE_FLASH_INTERVAL / 1000) * length
             self.start_record()
             self.exp_window.showFullScreen()
-        elif self.exp_params.experiment == _P300_SECRET_4:
-            length = PINCODE_LENGTH
-            numbers = 4
-            self.exp_window = P300SecretSpeller(length=length, numbers=numbers, grid_size=2)
-            self.exp_params.record_duration = (numbers * PINCODE_FLASH_INTERVAL / 1000) * length
-            self.start_record()
-            self.exp_window.showFullScreen()
         # MOTOR IMG
         elif self.exp_params.experiment == _MI_CALIBRATION:
             self.exp_window = MotorImgWindow(sequence=SEQUENCE.CALIBRATION)
