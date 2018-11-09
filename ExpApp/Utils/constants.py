@@ -1,5 +1,6 @@
 CHANNELS_NUMBER = 8
 FILE_LOCATION = '../../../data/app/'  # FIle directory
+DEBUG_SUBDIR = 'debug/'
 
 # GUI constants
 WINDOW_X = 1600

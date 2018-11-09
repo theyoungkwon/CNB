@@ -7,12 +7,13 @@ from ExpApp.Utils.constants import FILE_LOCATION
 
 class Recorder:
 
-    def __init__(self, file_name='') -> None:
+    def __init__(self, file_name='', subdir='') -> None:
         super().__init__()
         self.timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         if len(file_name) == 0:
             file_name = self.timestamp
         self.file_name = file_name
+        self.subdir = subdir
         print("Recording samples to file: " + file_name)
         self.samples = []
 
@@ -24,4 +25,4 @@ class Recorder:
 
     def stop(self):
         print("Flushing " + str(len(self.samples)) + " records  to the file: " + self.file_name)
-        numpy.savetxt(FILE_LOCATION + self.file_name, self.samples)
+        numpy.savetxt(FILE_LOCATION + self.subdir + self.file_name, self.samples)

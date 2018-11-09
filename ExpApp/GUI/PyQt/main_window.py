@@ -25,7 +25,7 @@ from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATI
     EP_FLASH_RECORD_DURATION, _SSVEP1, EP_SSVEP_DURATION, _SSVEP2, _SSVEP3, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
     PINCODE_LENGTH, _MI_CALIBRATION, SSVEP_TIME_WINDOW, \
-    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ
+    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ, DEBUG_SUBDIR
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -256,7 +256,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.looper(self.exp_params.record_duration)
         self.is_recording = True
         self.record_button.setDisabled(self.is_recording)
-        self.recorder = Recorder(self.exp_params.to_file_name())
+        self.recorder = Recorder(file_name=self.exp_params.to_file_name(), subdir=DEBUG_SUBDIR if self.mock else '')
         self.exp_params.exp_id += 1
         t.start()
 
