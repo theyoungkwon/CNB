@@ -25,7 +25,8 @@ from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATI
     EP_FLASH_RECORD_DURATION, _SSVEP1, EP_SSVEP_DURATION, _SSVEP2, _SSVEP3, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
     PINCODE_LENGTH, _MI_CALIBRATION, SSVEP_TIME_WINDOW, \
-    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ, DEBUG_SUBDIR
+    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ, DEBUG_SUBDIR, \
+    Device, EMG_TRIAL_STEPS
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -36,9 +37,7 @@ import time
 import threading
 
 
-class Device(Enum):
-    EEG = 1,
-    EMG = 2
+
 
 
 # TODO add timestamp to record
@@ -212,13 +211,15 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_window.showFullScreen()
         # MOTOR IMG
         elif self.exp_params.experiment == _MI_CALIBRATION:
-            self.exp_window = MotorImgWindow(sequence=SEQUENCE.CALIBRATION)
-            self.exp_params.record_duration = MI_LABELS * MI_CALIBRATION_TRIALS * TRIAL_STEPS.TRIAL_END / 1000
+            self.exp_window = MotorImgWindow(sequence=SEQUENCE.CALIBRATION, device=self.device)
+            tracker = EMG_TRIAL_STEPS() if self.device == Device.EMG else TRIAL_STEPS()
+            self.exp_params.record_duration = MI_LABELS * MI_CALIBRATION_TRIALS * tracker.TRIAL_END / 1000
             self.start_record()
             self.exp_window.showFullScreen()
         elif self.exp_params.experiment == _MI_INPUT:
-            self.exp_window = MotorImgWindow(sequence=SEQUENCE.INPUT)
-            self.exp_params.record_duration = MI_INPUT_LENGTH * TRIAL_STEPS.TRIAL_END / 1000
+            self.exp_window = MotorImgWindow(sequence=SEQUENCE.INPUT, device=self.device)
+            tracker = EMG_TRIAL_STEPS() if self.device == Device.EMG else TRIAL_STEPS()
+            self.exp_params.record_duration = MI_INPUT_LENGTH * tracker.TRIAL_END / 1000
             self.start_record()
             self.exp_window.showFullScreen()
 
@@ -257,7 +258,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.is_recording = True
         self.record_button.setDisabled(self.is_recording)
         subdir = ""
-        if self.device == Device.EEG and self.mock:
+        if self.mock:
             subdir = DEBUG_SUBDIR
         if self.device == Device.EMG:
             subdir = str(Device.EMG) + "/"

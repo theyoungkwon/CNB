@@ -1,6 +1,12 @@
+from enum import Enum
+
 CHANNELS_NUMBER = 8
 FILE_LOCATION = '../../../data/app/'  # FIle directory
 DEBUG_SUBDIR = 'debug/'
+
+class Device(Enum):
+    EEG = 1,
+    EMG = 2
 
 # GUI constants
 WINDOW_X = 1600
@@ -62,6 +68,14 @@ class TRIAL_STEPS:
     TRIAL_END = 8000
 
 
+class EMG_TRIAL_STEPS:
+    CROSS_START = 0
+    CUE_START = 1000
+    CUE_END = 2000
+    CROSS_END = 2000
+    TRIAL_END = 2500
+
+
 # SSVEP
 SSVEP_TIME_WINDOW = 5000
 FREQ = [
@@ -69,3 +83,5 @@ FREQ = [
     [27, 33, 35, 37, 43],
     [8.5, 12, 15]
 ]
+
+

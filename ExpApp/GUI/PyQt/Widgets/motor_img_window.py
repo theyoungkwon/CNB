@@ -3,7 +3,7 @@ from enum import Enum
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 
-from ExpApp.Utils.constants import TRIAL_STEPS, MI_CALIBRATION_TRIALS
+from ExpApp.Utils.constants import TRIAL_STEPS, MI_CALIBRATION_TRIALS, EMG_TRIAL_STEPS, Device
 
 
 class MI_TASK:
@@ -41,7 +41,7 @@ TIME_INCREMENT = 250
 
 
 class MotorImgWindow(QtWidgets.QWidget):
-    def __init__(self, parent=None, sequence=SEQUENCE.INPUT):
+    def __init__(self, parent=None, device=Device.EMG, sequence=SEQUENCE.INPUT):
         super().__init__(parent=parent)
 
         self.points = {
@@ -65,6 +65,9 @@ class MotorImgWindow(QtWidgets.QWidget):
         self.time = 0
         self.trial_step = 0
 
+        self.arrow_color = QtCore.Qt.darkGreen
+        self.tracker = EMG_TRIAL_STEPS() if device == Device.EMG else TRIAL_STEPS()
+
     def draw_arrow(self, painter, x, y):
         body = 150
         side = 180
@@ -79,10 +82,10 @@ class MotorImgWindow(QtWidgets.QWidget):
         path.lineTo(x + (-1 if d[0] == 0 else 0) * side, y - (-1 if d[1] == 0 else 0) * side)
         path.lineTo(x + (1 if d[0] == 0 else 0) * side, y - (1 if d[1] == 0 else 0) * side)
         path.lineTo(x + d[0] * side, y - d[1] * side)
-        painter.fillPath(path, QtCore.Qt.darkGreen)
+        painter.fillPath(path, self.arrow_color)
 
         arrow = QtCore.QRectF(x - body / 2, y - body / 2, body, body)
-        painter.fillRect(arrow, QtCore.Qt.darkGreen)
+        painter.fillRect(arrow, self.arrow_color)
 
     def draw_cross(self, painter, x, y):
         tl = 300
@@ -102,18 +105,20 @@ class MotorImgWindow(QtWidgets.QWidget):
         painter = QtGui.QPainter(self)
         painter.setPen(QtGui.QPen(QtCore.Qt.darkGray))
 
-        if TRIAL_STEPS.CROSS_START <= self.time < TRIAL_STEPS.CROSS_END:
+        if self.tracker.CROSS_START <= self.time < self.tracker.CROSS_END:
             self.draw_cross(painter, x, y)
-        if TRIAL_STEPS.CUE_START <= self.time < TRIAL_STEPS.CUE_END:
+        if self.tracker.CUE_START <= self.time < self.tracker.CUE_END:
             self.draw_arrow(painter, x, y)
 
         painter.drawText(QtCore.QRectF(0, 0, 200, 100), QtCore.Qt.AlignLeft, str(self.time))
 
     def manage_sequence(self):
         self.time += TIME_INCREMENT
-        if self.time % TRIAL_STEPS.TRIAL_END == 0:
+        if self.time % self.tracker.TRIAL_END == 0:
             self.time = 0
             self.sequence_index += 1
+            if self.sequence_index % MI_CALIBRATION_TRIALS == 0:
+                self.arrow_color = QtCore.Qt.darkGreen if self.arrow_color == QtCore.Qt.darkRed else QtCore.Qt.darkRed
         self.update()
 
 
