@@ -256,7 +256,12 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.looper(self.exp_params.record_duration)
         self.is_recording = True
         self.record_button.setDisabled(self.is_recording)
-        self.recorder = Recorder(file_name=self.exp_params.to_file_name(), subdir=DEBUG_SUBDIR if self.mock else '')
+        subdir = ""
+        if self.device == Device.EEG and self.mock:
+            subdir = DEBUG_SUBDIR
+        if self.device == Device.EMG:
+            subdir = str(Device.EMG) + "/"
+        self.recorder = Recorder(file_name=self.exp_params.to_file_name(), subdir=subdir)
         self.exp_params.exp_id += 1
         t.start()
 
@@ -303,6 +308,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
                 board = OBCIConnector()
                 board.attach_handlers(self.data_handler)
             elif self.device == Device.EMG:
+                self.exp_params.name_prefix = "EMG"
                 EMGConnector(self.communicator)
 
 
