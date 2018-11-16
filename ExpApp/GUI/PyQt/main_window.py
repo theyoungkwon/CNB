@@ -1,7 +1,10 @@
 import getopt
 import subprocess
 import sys
-from enum import Enum
+
+import os
+
+path_fix = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 import matplotlib
 from ExpApp.API.OBCIConnector import OBCIConnector
@@ -35,9 +38,6 @@ PAUSE_GRAPH = "Pause graph"
 matplotlib.use("Qt4Agg")
 import time
 import threading
-
-
-
 
 
 # TODO add timestamp to record
@@ -262,7 +262,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             subdir = DEBUG_SUBDIR
         if self.device == Device.EMG:
             subdir = str(Device.EMG) + "/"
-        self.recorder = Recorder(file_name=self.exp_params.to_file_name(), subdir=subdir)
+        self.recorder = Recorder(_dir=path_fix, file_name=self.exp_params.to_file_name(), subdir=subdir)
         self.exp_params.exp_id += 1
         t.start()
 
@@ -295,7 +295,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.communicator.data_signal.connect(add_data_callback_func)
         if self.mock:
             file_name = "EEGMOCK" if self.device == Device.EEG else "EMGMOCK"
-            reader = ReadSample(file_name)
+            reader = ReadSample(path_fix + file_name)
             sample = reader.read_sample()
 
             while sample is not None:
