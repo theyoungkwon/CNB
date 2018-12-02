@@ -51,7 +51,7 @@ def gesture_mock(q):
 
 def debug():
     q = Queue(maxsize=1)
-    q.put("PALM")
+    q.put(["PALM"])
     p2 = Process(target=server_main, args=(q,))
     p1 = Process(target=gesture_mock, args=(q,))
     p2.start()
