@@ -11,6 +11,7 @@ class Device(Enum):
 # GUI constants
 WINDOW_X = 1600
 WINDOW_Y = 800
+BACKGROUND_COLOR = "#808080"
 # Graph constants
 X_LIM = 200
 DPI = 100

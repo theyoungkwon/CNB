@@ -1,7 +1,8 @@
 import matplotlib
 import numpy as np
+from PyQt5.QtCore import QThread
 
-from ExpApp.Utils.constants import X_LIM, DPI, UPDATE_AXIS_INTERVAL, REDRAW_INTERVAL
+from ExpApp.Utils.constants import X_LIM, DPI, UPDATE_AXIS_INTERVAL, REDRAW_INTERVAL, BACKGROUND_COLOR
 from ExpApp.Utils.constants import CHANNELS_NUMBER
 
 matplotlib.use("Qt4Agg")
@@ -13,14 +14,13 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
 class GraphWidget(FigureCanvas, TimedAnimation):
 
-    def __init__(self):
+    def __init__(self, is_cool):
 
         self.addedData = []
         self.subplots = []
         self.lines = []
         self.line_heads = []
         self.line_tails = []
-
         self.xlim = X_LIM
         self.n = np.linspace(0, self.xlim - 1, self.xlim)
 
@@ -29,18 +29,22 @@ class GraphWidget(FigureCanvas, TimedAnimation):
             self.y.append((self.n * 0.0) + 50)
 
         self.fig = Figure(figsize=(5, 5), dpi=DPI)
+        if is_cool:
+            self.fig.set_facecolor(BACKGROUND_COLOR)
 
         self.subplots = []
         for i in range(CHANNELS_NUMBER):
-            line = Line2D([], [], color='blue')
-            line_tail = Line2D([], [], color='red', linewidth=2)
-            line_head = Line2D([], [], color='red', marker='o', markeredgecolor='r')
+            line = Line2D([], [], color='#8B0000')
+            line_tail = Line2D([], [], color='#CD0000', linewidth=2)
+            line_head = Line2D([], [], color='#FF4500', marker='o', markeredgecolor='r')
 
             subplot = self.fig.add_subplot(CHANNELS_NUMBER, 1, i + 1)
             subplot.add_line(line)
             subplot.add_line(line_tail)
             subplot.add_line(line_head)
             subplot.set_xlim(0, self.xlim - 1)
+            if is_cool:
+                subplot.set_axis_off()
 
             self.lines.append(line)
             self.line_heads.append(line_head)

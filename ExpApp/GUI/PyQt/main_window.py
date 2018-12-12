@@ -1,4 +1,5 @@
 import getopt
+import os
 import subprocess
 import sys
 
@@ -10,7 +11,7 @@ import matplotlib
 from ExpApp.API.OBCIConnector import OBCIConnector
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QThreadPool, QThread
+from PyQt5.QtCore import QThreadPool
 from PyQt5.QtWidgets import QPushButton, QDoubleSpinBox, QLineEdit, QLabel, QRadioButton, QSpinBox, QComboBox
 
 from EMG.EMGConnector import EMGConnector
@@ -19,17 +20,14 @@ from ExpApp.GUI.PyQt.Widgets.graphs import GraphWidget
 from ExpApp.GUI.PyQt.Widgets.motor_img_window import MotorImgWindow, SEQUENCE
 from ExpApp.GUI.PyQt.Widgets.p300_secret_speller import P300SecretSpeller
 from ExpApp.GUI.PyQt.Widgets.pincode_window import PinCodeWindow
-from ExpApp.GUI.PyQt.Widgets.ssvep_exp import SSVEPExperimentWindow
-from ExpApp.GUI.PyQt.Widgets.ssvep_window import SSVEPWindow
-from ExpApp.Utils import Worker
 from ExpApp.Utils.ExperimentParams import ExperimentParams
 from ExpApp.Utils.Recorder import Recorder
 from ExpApp.Utils.constants import WINDOW_X, WINDOW_Y, _FLASH, MAX_RECORD_DURATION, _EC, _EO, EP_EO_DURATION, \
-    EP_FLASH_RECORD_DURATION, _SSVEP1, EP_SSVEP_DURATION, _SSVEP2, _SSVEP3, \
+    EP_FLASH_RECORD_DURATION, _SSVEP1, _SSVEP2, _SSVEP3, \
     _PINCODE_4_TRUE_SEQ_REP_3, PINCODE_FLASH_INTERVAL, _P300_SECRET_9, PINCODE_TRUE_SEQ, PINCODE_REPETITIONS, \
     PINCODE_LENGTH, _MI_CALIBRATION, SSVEP_TIME_WINDOW, \
-    _P300_SECRET_4, _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ, DEBUG_SUBDIR, \
-    Device, EMG_TRIAL_STEPS
+    _MI_INPUT, TRIAL_STEPS, MI_CALIBRATION_TRIALS, MI_LABELS, MI_INPUT_LENGTH, FREQ, DEBUG_SUBDIR, \
+    Device, EMG_TRIAL_STEPS, BACKGROUND_COLOR
 from ExpApp.tests.read_sample import ReadSample
 
 RESUME_GRAPH = 'Resume graph'
@@ -85,7 +83,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.graph_frame = QtWidgets.QFrame(self)
         self.graph_frame.setLayout(self.graph_layout)
         self.main_layout.addWidget(self.graph_frame, 0, 0, 3, graph_col_span)
-        self.myFig = GraphWidget()
+        self.myFig = GraphWidget(True if self.device == Device.EMG else False)
         self.graph_layout.addWidget(self.myFig)
         my_data_loop = threading.Thread(name='my_data_loop', target=self.data_send_loop, daemon=True,
                                         args=(self.add_data_callback_func,))
@@ -97,78 +95,81 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_frame = QtWidgets.QFrame(self)
         self.control_panel_frame.setLayout(self.control_panel_layout)
         self.main_layout.addWidget(self.control_panel_frame, cpr, graph_col_span, 1, 3)
-
-        # Pause button
-        self.pause_button = QPushButton(PAUSE_GRAPH)
         self.is_paused = False
-        self.pause_button.clicked.connect(lambda: self.pause_graphs())
-        self.control_panel_layout.addWidget(self.pause_button, cpr, 0, 1, 3)
-        cpr += 1
+        if self.device == Device.EEG:
+            # Pause button
+            self.pause_button = QPushButton(PAUSE_GRAPH)
+            self.pause_button.clicked.connect(lambda: self.pause_graphs())
+            self.control_panel_layout.addWidget(self.pause_button, cpr, 0, 1, 3)
+            cpr += 1
 
-        # Record panel
-        self.record_button = QPushButton('Record')
-        self.record_button.clicked.connect(lambda: self.start_record_())
-        self.record_time_input = QDoubleSpinBox()
-        self.record_count = 1
-        self.record_time_input.setValue(self.exp_params.record_duration)
-        self.record_time_input.setSingleStep(0.1)
-        self.record_time_input.setMaximum(MAX_RECORD_DURATION)
-        self.record_time_input.valueChanged.connect(self.set_record_time)
-        self.record_countdown = QLabel("")
-        self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
-        self.control_panel_layout.addWidget(self.record_countdown, cpr, 1, 1, 1)
-        self.control_panel_layout.addWidget(self.record_button, cpr, 2, 1, 1)
-        cpr += 1
+            # Record panel
+            self.record_button = QPushButton('Record')
+            self.record_button.clicked.connect(lambda: self.start_record_())
+            self.record_time_input = QDoubleSpinBox()
+            self.record_count = 1
+            self.record_time_input.setValue(self.exp_params.record_duration)
+            self.record_time_input.setSingleStep(0.1)
+            self.record_time_input.setMaximum(MAX_RECORD_DURATION)
+            self.record_time_input.valueChanged.connect(self.set_record_time)
+            self.record_countdown = QLabel("")
+            self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
+            self.control_panel_layout.addWidget(self.record_countdown, cpr, 1, 1, 1)
+            self.control_panel_layout.addWidget(self.record_button, cpr, 2, 1, 1)
+            cpr += 1
 
-        # Experiment setup panel
-        # File name
-        self.exp_name_prefix_input = QLineEdit()
-        self.exp_name_prefix_input.setText(self.exp_params.name_prefix)
-        self.exp_name_prefix_input.editingFinished.connect(self.set_exp_name)
-        self.control_panel_layout.addWidget(QLabel("File Name Prefix: "), cpr, 0, 1, 1)
-        self.control_panel_layout.addWidget(self.exp_name_prefix_input, cpr, 1, 1, 2)
-        cpr += 1
-        # Subject id
-        self.exp_subject_id_prefix_input = QLineEdit()
-        self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
-        self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
-        self.control_panel_layout.addWidget(QLabel("Subject: "), cpr, 0, 1, 1)
-        self.control_panel_layout.addWidget(self.exp_subject_id_prefix_input, cpr, 1, 1, 2)
-        cpr += 1
-        # Gender
-        self.control_panel_layout.addWidget(QLabel("Gender:"), cpr, 0, 1, 1)
-        self.exp_m_input = QRadioButton("male")
-        self.exp_m_input.setChecked(self.exp_params.gender == self.exp_m_input.text())
-        self.exp_m_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_m_input.text(), checked))
-        self.exp_f_input = QRadioButton("female")
-        self.exp_f_input.setChecked(self.exp_params.gender == self.exp_f_input.text())
-        self.exp_f_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_f_input.text(), checked))
-        self.control_panel_layout.addWidget(self.exp_m_input, cpr, 1, 1, 1)
-        self.control_panel_layout.addWidget(self.exp_f_input, cpr, 2, 1, 1)
-        cpr += 1
-        # Age
-        self.control_panel_layout.addWidget(QLabel("Age:"), cpr, 0, 1, 1)
-        self.exp_age_input = QSpinBox()
-        self.exp_age_input.setValue(self.exp_params.age)
-        self.exp_age_input.editingFinished.connect(self.set_exp_age)
-        self.control_panel_layout.addWidget(self.exp_age_input, cpr, 1, 1, 2)
-        cpr += 1
-        # Electrodes
-        self.exp_electrodes_input = QLineEdit()
-        self.exp_electrodes_input.setText(self.exp_params.electrodes)
-        self.exp_electrodes_input.editingFinished.connect(self.set_electrodes)
-        self.control_panel_layout.addWidget(QLabel("Electrodes:"), cpr, 0, 1, 1)
-        self.control_panel_layout.addWidget(self.exp_electrodes_input, cpr, 1, 1, 2)
-        cpr += 1
+            # Experiment setup panel
+            # File name
+            self.exp_name_prefix_input = QLineEdit()
+            self.exp_name_prefix_input.setText(self.exp_params.name_prefix)
+            self.exp_name_prefix_input.editingFinished.connect(self.set_exp_name)
+            self.control_panel_layout.addWidget(QLabel("File Name Prefix: "), cpr, 0, 1, 1)
+            self.control_panel_layout.addWidget(self.exp_name_prefix_input, cpr, 1, 1, 2)
+            cpr += 1
+            # Subject id
+            self.exp_subject_id_prefix_input = QLineEdit()
+            self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
+            self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
+            self.control_panel_layout.addWidget(QLabel("Subject: "), cpr, 0, 1, 1)
+            self.control_panel_layout.addWidget(self.exp_subject_id_prefix_input, cpr, 1, 1, 2)
+            cpr += 1
+            # Gender
+            self.control_panel_layout.addWidget(QLabel("Gender:"), cpr, 0, 1, 1)
+            self.exp_m_input = QRadioButton("male")
+            self.exp_m_input.setChecked(self.exp_params.gender == self.exp_m_input.text())
+            self.exp_m_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_m_input.text(), checked))
+            self.exp_f_input = QRadioButton("female")
+            self.exp_f_input.setChecked(self.exp_params.gender == self.exp_f_input.text())
+            self.exp_f_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_f_input.text(), checked))
+            self.control_panel_layout.addWidget(self.exp_m_input, cpr, 1, 1, 1)
+            self.control_panel_layout.addWidget(self.exp_f_input, cpr, 2, 1, 1)
+            cpr += 1
+            # Age
+            self.control_panel_layout.addWidget(QLabel("Age:"), cpr, 0, 1, 1)
+            self.exp_age_input = QSpinBox()
+            self.exp_age_input.setValue(self.exp_params.age)
+            self.exp_age_input.editingFinished.connect(self.set_exp_age)
+            self.control_panel_layout.addWidget(self.exp_age_input, cpr, 1, 1, 2)
+            cpr += 1
+            # Electrodes
+            self.exp_electrodes_input = QLineEdit()
+            self.exp_electrodes_input.setText(self.exp_params.electrodes)
+            self.exp_electrodes_input.editingFinished.connect(self.set_electrodes)
+            self.control_panel_layout.addWidget(QLabel("Electrodes:"), cpr, 0, 1, 1)
+            self.control_panel_layout.addWidget(self.exp_electrodes_input, cpr, 1, 1, 2)
+            cpr += 1
 
-        # Experiment selection
-        self.exp_selection_box = QComboBox()
-        self.exp_selection_box.addItems(self.options)
-        self.exp_selection_box.currentIndexChanged.connect(self.set_exp)
-        self.exp_run_button = QPushButton("Run")
-        self.exp_run_button.clicked.connect(self.exp_run)
-        self.control_panel_layout.addWidget(self.exp_run_button, cpr, 0, 1, 1)
-        self.control_panel_layout.addWidget(self.exp_selection_box, cpr, 1, 1, 2)
+            # Experiment selection
+            self.exp_selection_box = QComboBox()
+            self.exp_selection_box.addItems(self.options)
+            self.exp_selection_box.currentIndexChanged.connect(self.set_exp)
+            self.exp_run_button = QPushButton("Run")
+            self.exp_run_button.clicked.connect(self.exp_run)
+            self.control_panel_layout.addWidget(self.exp_run_button, cpr, 0, 1, 1)
+            self.control_panel_layout.addWidget(self.exp_selection_box, cpr, 1, 1, 2)
+
+        if self.device == Device.EMG:
+            self.setStyleSheet("background-color: " + BACKGROUND_COLOR + ";")
 
         self.show()
 
@@ -192,7 +193,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.record_duration = SSVEP_TIME_WINDOW * len(FREQ[id]) / 1000
             self.exp_window = None
             self.start_record()
-            path = "./Widgets/ssvep_exp.py"
+            path = path_fix + "./Widgets/ssvep_exp.py"
             subprocess.Popen(["python", path, str(id)])
         # PINCODE TRUE SEQ
         elif self.exp_params.experiment == _PINCODE_4_TRUE_SEQ_REP_3:
