@@ -2,8 +2,8 @@ from multiprocessing import Process, Queue
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from time import sleep
 
-# from ExpApp.GUI.PyQt.Widgets.GestureWidget import gesture_widget_main
-# from ExpApp.Utils.datacore_constants import gestures
+from ExpApp.GUI.PyQt.Widgets.GestureWidget import gesture_widget_main
+from ExpApp.Utils.datacore_constants import gestures
 
 
 class GRServer:
@@ -36,13 +36,6 @@ def server_main(q):
 
 
 def gesture_mock(q):
-    gestures = {
-        "0": "FIST",
-        "1": "PALM",
-        "2": "THUMB",
-        "3": "POINT",
-        "4": "MIDFNG",
-    }
     while True:
         for key in gestures:
             q.put([gestures[key]])
@@ -60,17 +53,17 @@ def debug():
     p1.join()
 
 
-# def release():
-#     q = Queue(maxsize=1)
-#     q.put("PALM")
-#     p2 = Process(target=server_main, args=(q,))
-#     p1 = Process(target=gesture_widget_main, args=(q,))
-#     p2.start()
-#     p1.start()
-#     p2.join()
-#     p1.join()
+def release():
+    q = Queue(maxsize=1)
+    q.put("PALM")
+    p2 = Process(target=server_main, args=(q,))
+    p1 = Process(target=gesture_widget_main, args=(q,))
+    p2.start()
+    p1.start()
+    p2.join()
+    p1.join()
 
 
 if __name__ == '__main__':
-    # release()
-    debug()
+    release()
+    # debug()

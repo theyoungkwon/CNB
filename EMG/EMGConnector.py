@@ -20,6 +20,7 @@ class EmgCollector(myo.DeviceListener):
         self.lock = Lock()
         self.emg_data_queue = deque(maxlen=n)
         self.communicator = communicator
+        self.data_handler = data_handler
 
     def get_emg_data(self):
         with self.lock:
@@ -33,5 +34,8 @@ class EmgCollector(myo.DeviceListener):
             self.emg_data_queue.append((event.timestamp, event.emg))
             timestamp = event.timestamp
             value = event.emg
-            value.append(timestamp)
-            self.communicator.data_signal.emit(value)
+            if self.communicator is not None:
+                value.append(timestamp)
+                self.communicator.data_signal.emit(value)
+            if self.data_handler is not None:
+                self.data_handler(value)
