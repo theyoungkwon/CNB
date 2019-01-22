@@ -141,7 +141,7 @@ class EMGDataLoader:
         t.load_main()
 
         t.split_into_trials()
-        t.bandpass(bandpass)
+        # t.bandpass(bandpass)
         t.trim_trials(x=start, y=end)
 
         y_train = t.get_train_labels()

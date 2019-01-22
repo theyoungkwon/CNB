@@ -19,7 +19,7 @@ class EMG_CNN:
     @staticmethod
     def build_cnn(features, wl=IMG_Y):
         # Input layer
-        input_layer = tf.reshape(features["x"], [-1, IMG_X, wl, 1])
+        input_layer = tf.reshape(features["x"], [-1, IMG_X, wl, 1], name="inputs")
 
         # Convolution layers
         for layer in cnn_config:
@@ -52,7 +52,7 @@ class EMG_CNN:
         )
 
         # Logits layer
-        logits = tf.layers.dense(inputs=input_layer, units=NUM_LABELS)
+        logits = tf.layers.dense(inputs=input_layer, units=NUM_LABELS, name="output_node")
 
         return logits, input_layer
 
@@ -79,7 +79,7 @@ class EMG_CNN:
 
         # Output
         predictions = {
-            "classes": tf.argmax(input=logits, axis=1),
+            "classes": tf.argmax(input=logits, axis=1, name="true_output"),
             "probabilities": tf.nn.softmax(input_layer, name="softmax_tensor"),
         }
 

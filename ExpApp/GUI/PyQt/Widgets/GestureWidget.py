@@ -67,7 +67,8 @@ def gesture_widget_main(q=None):
     cfg = {
         "start": 0,
         "end": 200,
-        "dir": "CNNF_0_200____",
+        # "dir": "CNNF_0_200____",
+        "dir": "CNN_EXPORT",
         "shift": 160
     }
     clf = EMG_CNN.load(cfg["dir"], params=cfg)

@@ -1,0 +1,6 @@
+freeze_graph --input_graph=graph.pbtxt --input_checkpoint=model.ckpt-400 --output_graph=frozen_graph.pb --output_node_names=softmax_tensor --input_node_names=inputs --input_binary=false
+
+
+bazel run tensorflow/tools/graph_transforms:summarize_graph ----in_graph=graph.pbtxt --input_binary=false
+
+tflite_convert --output_file=converted_graph.tflite --graph_def_file=frozen_graph.pb --output_arrays=softmax_tensor --input_arrays=inputs
