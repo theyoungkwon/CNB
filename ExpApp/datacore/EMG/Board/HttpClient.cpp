@@ -1,18 +1,14 @@
-#include <Arduino.h>
+#include <WiFi.h>
+#include <WiFiMulti.h>
+#include <HTTPClient.h>
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
-
-#include <ESP8266HTTPClient.h>
-
+WiFiMulti WiFiMulti;
 #define USE_SERIAL Serial
-
-ESP8266WiFiMulti WiFiMulti;
 
 const char* SSID = "SPARTHAN";
 const char* PASS = "66668888";
-const String HOST = "192.168.137.1";
-const uint16_t PORT = 8081;
+const String HOST = "192.168.137.192";
+const uint16_t PORT = 5000;
 
 void setup() {
 
@@ -34,12 +30,11 @@ void setup() {
 void loop() {
   if ((WiFiMulti.run() == WL_CONNECTED)) {
     HTTPClient http;
-    http.begin("http://" + HOST + "/");
+    http.begin("http://" + HOST + ":" + PORT + "/");
     int httpCode = http.GET();
     if (httpCode > 0) {
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
-//        USE_SERIAL.println(payload);
         String cmd = payload;
         if (String("PALM") == cmd) {
           Serial.println("PALM");
@@ -53,8 +48,8 @@ void loop() {
         else if (String("POINT") == cmd) {
           Serial.println("POINT");
         }
-        else if (String("MIDFNG") == cmd) {
-          Serial.println("MIDFNG");
+        else if (String("PEACE") == cmd) {
+          Serial.println("PEACE");
         }
       }
     } else {
