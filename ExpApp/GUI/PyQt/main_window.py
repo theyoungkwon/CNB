@@ -96,7 +96,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_frame.setLayout(self.control_panel_layout)
         self.main_layout.addWidget(self.control_panel_frame, cpr, graph_col_span, 1, 3)
         self.is_paused = False
-        if self.device == Device.EEG:
+        if True:
             # Pause button
             self.pause_button = QPushButton(PAUSE_GRAPH)
             self.pause_button.clicked.connect(lambda: self.pause_graphs())

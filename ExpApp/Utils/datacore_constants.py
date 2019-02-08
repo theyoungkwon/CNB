@@ -33,7 +33,7 @@ gestures = {
     "1": "PALM",
     "2": "THUMB",
     "3": "POINT",
-    "4": "MIDFNG",
+    "4": "PEACE",
 }
 
 

@@ -6,11 +6,11 @@ import sklearn
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 
-from ExpApp.Utils.constants import CHANNELS_NUMBER
-from ExpApp.Utils.datacore_constants import TC_B, TC_E, NUM_LABELS
+from ExpApp.Utils.datacore_constants import TC_B, TC_E, NUM_LABELS, IMG_X
 
 data_directory = "5labels/"
-data_directory_main = "main/"
+# data_directory_main = "main/"
+data_directory_main = "5_label_EXP/Young/"
 trials_in_file = 24
 FPL_train = 2  # FILES PER LABEL
 
@@ -28,30 +28,30 @@ class EMGDataLoader:
             for file_index in range(FPL_train):
                 filename = data_directory + "l" + str(label + 1) + "_" + str(file_index + 1)
                 record = np.loadtxt(filename)
-                raw_data = record[:, 0:CHANNELS_NUMBER]
+                raw_data = record[:, 0:IMG_X]
                 self.train_data.append(raw_data)
         self.test_data = []
         for label in range(NUM_LABELS):
             filename = data_directory + "l" + str(label + 1) + "_test"
             record = np.loadtxt(filename)
-            raw_data = record[:, 0:CHANNELS_NUMBER]
+            raw_data = record[:, 0:IMG_X]
             self.test_data.append(raw_data)
 
     def load_main(self):
         dir_prefix = os.path.dirname(os.path.abspath(__file__)) + '/../../../data/app/Device.EMG/'
         self.train_data = []
         self.test_data = []
-        self.labels = ["fist", "palm", "thumb", "point", "fuck"]
+        self.labels = ["fist", "palm", "thumb", "point", "peace"]
         for label in self.labels:
             for file_index in range(FPL_train):
                 filename = dir_prefix + data_directory_main + label + "_" + str(file_index + 1)
                 record = np.loadtxt(filename)
-                raw_data = record[:, 0:CHANNELS_NUMBER]
+                raw_data = record[:, 0:IMG_X]
                 self.train_data.append(raw_data)
 
             filename = dir_prefix + data_directory_main + label + "_test"
             record = np.loadtxt(filename)
-            raw_data = record[:, 0:CHANNELS_NUMBER]
+            raw_data = record[:, 0:IMG_X]
             self.test_data.append(raw_data)
 
     def get_train_labels(self):
@@ -97,9 +97,9 @@ class EMGDataLoader:
         for i in range(len(self.train_trials)):
             self.train_trials[i] = sklearn.preprocessing.normalize(self.train_trials[i])
 
-    def pca(self):
-        pca1 = sklearn.decomposition.PCA(n_components=CHANNELS_NUMBER)
-        pca2 = sklearn.decomposition.PCA(n_components=CHANNELS_NUMBER)
+    def pca(self, n_components=IMG_X):
+        pca1 = sklearn.decomposition.PCA(n_components)
+        pca2 = sklearn.decomposition.PCA(n_components)
         for i in range(len(self.test_trials)):
             pca1.fit_transform(self.test_trials[i])
 
@@ -165,6 +165,7 @@ class EMGDataLoader:
         t.split_into_trials()
         t.substract_mean()
         t.normalize()
+        t.pca()
         t.trim_trials(x=150, y=350)
         t.flatten()
         y_train = t.get_train_labels()

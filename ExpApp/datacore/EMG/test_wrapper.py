@@ -1,4 +1,7 @@
+import datetime
 import os
+import time
+
 import tensorflow as tf
 import numpy as np
 
@@ -7,6 +10,7 @@ from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
 from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
 from ExpApp.datacore.EMG.EMGWindowSlicer import EMGWindowSlicer
 from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
+from ExpApp.datacore.EMG.NinaLoader import nina
 
 
 def train_tests():
@@ -17,8 +21,10 @@ def train_tests():
         {"start": 0, "end": 200},
         # {"start": 100, "end": 360},
     ]
+    i = 0
     for params in tests:
-        _dir = "CNN_NN_" \
+        i += 1
+        _dir = "NINA" + str(i) + "_" \
                + str(params["start"]) + "_" \
                + str(params["end"]) + "_" \
                + (str(params["bandpass"]) if "bandpass" in params else "" + "_") \
@@ -26,20 +32,24 @@ def train_tests():
                + (str(params["steps"]) if "steps" in params else "" + "_") \
                + (str(params["momentum"]) if "momentum" in params else "")
         print(_dir)
-        _dir = "CNN_EXPORT"
+        # _dir = "CNN_EXPORT"
 
-        input_fn = EMGDataLoader.load_data_for_cnn
+        start_time = int(round(time.time() * 1000))
+        # input_fn = EMGDataLoader.load_data_for_cnn
+        input_fn = nina
         clf = EMG_CNN.train(model_dir=_dir, params=params, input_fn=input_fn)
         EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
+        end_time = int(round(time.time() * 1000))
+        print(end_time - start_time)
 
 
-def load_test(dir='CNNF_0_200____'):
+def load_test():
     params = {
         "start": 0,
-        "end": 200
+        "end": 180
     }
     input_fn = EMGDataLoader.load_data_for_cnn
-    clf = EMG_CNN.load(model_dir="CNNF_0_200____", params=params)
+    clf = EMG_CNN.load(model_dir="CNN_CHANNELS_2_0_180____", params=params)
     EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
 
 
@@ -69,7 +79,7 @@ def convert():
 
 def test_tf_lite():
     # Load TFLite model and allocate tensors.
-    interpreter = tf.lite.Interpreter(model_path="models/converted_graph.tflite", )
+    interpreter = tf.lite.Interpreter(model_path="models/4PCA_graph.tflite", )
     interpreter.allocate_tensors()
 
     # Get input and output tensors.
@@ -79,26 +89,27 @@ def test_tf_lite():
     # Test model on random input data.
     input_shape = input_details[0]['shape']
     input_index = input_details[0]['index']
-    interpreter.resize_tensor_input(input_index, input_shape)
-    train, test = EMGDataLoader.load_data_for_cnn(params={"start": 0, "end": 200})
+    batch_size = 20
+    WINDOW_END = 200
+    shape = [batch_size, IMG_X, WINDOW_END, 1]
+    interpreter.resize_tensor_input(input_index, shape)
+    train, test = EMGDataLoader.load_data_for_cnn(params={"start": 0, "end": WINDOW_END})
 
-    input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
-    print(input_data.shape)
-    for i in range(train.shape[0] // 20):
-        input_data = train[i*20:i*20+20].reshape([20, 8, 200, 1])
-        print(input_data.shape)
+    for i in range(train.shape[0] // batch_size):
+        input_data = train[i * batch_size:i * batch_size + batch_size].reshape(shape)
+        start = int(round(time.time() * 1000))
         interpreter.set_tensor(input_index, input_data)
         interpreter.invoke()
-
         output_data = interpreter.get_tensor(output_details[0]['index'])
-        print(output_data.T)
+        end = int(round(time.time() * 1000))
+        print(str((end - start) / batch_size) + ":" + str(output_data.T))
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    # train_tests()
+    train_tests()
     # load_test()
     # load_test(dir='EMG_CNN_EXPORT/1544781666/')
     # export()
     # convert()
-    test_tf_lite()
+    # test_tf_lite()

@@ -3,11 +3,12 @@
 #include <HTTPClient.h>
 
 WiFiMulti WiFiMulti;
+HTTPClient http;
 #define USE_SERIAL Serial
 
 const char* SSID = "SPARTHAN";
 const char* PASS = "66668888";
-const String HOST = "192.168.137.192";
+const String HOST = "192.168.137.92";
 const uint16_t PORT = 5000;
 
 void setup() {
@@ -23,19 +24,18 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
+  http.begin("http://" + HOST + ":" + PORT + "/");
   delay(500);
 }
 
 void loop() {
   if ((WiFiMulti.run() == WL_CONNECTED)) {
-    HTTPClient http;
-    http.begin("http://" + HOST + ":" + PORT + "/");
     int httpCode = http.GET();
     if (httpCode > 0) {
       if (httpCode == HTTP_CODE_OK) {
         String payload = http.getString();
         String cmd = payload;
+        Serial.println(payload);
         if (String("PALM") == cmd) {
           Serial.println("PALM");
         }
@@ -56,8 +56,8 @@ void loop() {
       USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
 
-    http.end();
+//    http.end();
   }
 
-  delay(500);
+  delay(200);
 }
