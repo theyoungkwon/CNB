@@ -6,7 +6,7 @@ import myo
 
 class EMGConnector:
     def __init__(self, communicator, data_handler=None):
-        myo.init()
+        myo.init("C:\\myo\\myo64.dll")
         hub = myo.Hub()
         listener = EmgCollector(50, communicator, data_handler)
         while hub.run(listener.on_event, 500):
