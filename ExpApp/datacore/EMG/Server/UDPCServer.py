@@ -1,10 +1,22 @@
+import ast
 import socket
 
-from ExpApp.Utils.datacore_constants import get_random_gesture
+from ExpApp.Utils.datacore_constants import get_random_gesture, label_to_gesture
 
 import tensorflow as tf
+import numpy as np
+
+from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
 
 PACKAGE_MAX_SIZE = 25
+cfg = {
+    "start": 0,
+    "end": 200,
+    "dir": "CNN_EXPORT",
+    "shift": 160
+}
+clf = EMG_CNN.load(cfg["dir"], params=cfg)
+
 
 class UDPCServer:
 
@@ -15,6 +27,7 @@ class UDPCServer:
 
     def __init__(self, debug=False) -> None:
         super().__init__()
+        self.debug = debug
         ip = '192.168.137.1'
         port = 90
         buffer_size = 3610
@@ -26,12 +39,27 @@ class UDPCServer:
             message = bytes_address_pair[0]
             data = message.decode("utf-8")
             data = data.split("_")
-            emg = data[0]
+            emg_str = data[0]
             time = data[1]
-            # feed bytes from emg to classifier
+            gesture = ""
+            if not self.debug:
+                start = emg_str.find('[')
+                end = emg_str.rfind(']') + 1
+                emg_package = emg_str[start:end]
+                emg_data = ast.literal_eval(emg_package)[0:200]
+                emg_data = np.asarray([emg_data]).astype(np.float32)
+                eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+                    x={"x": emg_data},
+                    num_epochs=1,
+                    shuffle=False)
+                predictions = clf.predict(input_fn=eval_input_fn)
+                for prediction in predictions:
+                    gesture = label_to_gesture(prediction['classes'])
+            else:
+                gesture = get_random_gesture()
             address = bytes_address_pair[1]
             print(address)
-            bytes_to_send = str.encode(self.formPacket(get_random_gesture() + "_" + time))
+            bytes_to_send = str.encode(self.formPacket(gesture + "_" + time))
             udp_server_socket.sendto(bytes_to_send, address)
 
 
