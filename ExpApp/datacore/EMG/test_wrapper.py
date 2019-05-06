@@ -5,12 +5,9 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from ExpApp.Utils.datacore_constants import IMG_X
-from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
+from ExpApp.Utils.datacore_constants import IMG_X, NUM_LABELS
 from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
-from ExpApp.datacore.EMG.EMGWindowSlicer import EMGWindowSlicer
 from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
-from ExpApp.datacore.EMG.NinaLoader import nina
 
 
 def train_tests():
@@ -24,7 +21,7 @@ def train_tests():
     i = 0
     for params in tests:
         i += 1
-        _dir = "NINA" + str(i) + "_" \
+        _dir = "Ubi" + str(NUM_LABELS) + "_" \
                + str(params["start"]) + "_" \
                + str(params["end"]) + "_" \
                + (str(params["bandpass"]) if "bandpass" in params else "" + "_") \
@@ -35,9 +32,10 @@ def train_tests():
         # _dir = "CNN_EXPORT"
 
         start_time = int(round(time.time() * 1000))
-        # input_fn = EMGDataLoader.load_data_for_cnn
-        input_fn = nina
+        input_fn = EMGDataLoader.load_data_for_cnn
+        # input_fn = nina
         clf = EMG_CNN.train(model_dir=_dir, params=params, input_fn=input_fn)
+        # clf = EMG_CNN.load(model_dir=_dir, params=params    )
         EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
         end_time = int(round(time.time() * 1000))
         print(end_time - start_time)
@@ -107,6 +105,7 @@ def test_tf_lite():
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    tf.logging.set_verbosity(tf.logging.ERROR)
     train_tests()
     # load_test()
     # load_test(dir='EMG_CNN_EXPORT/1544781666/')

@@ -1,8 +1,9 @@
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 
+from ExpApp.Utils.confusion_matrix_printer import plot_confusion_matrix
 from ExpApp.Utils.datacore_constants import Layer, IMG_X, IMG_Y, LEARNING_RATE, MOMENTUM, BATCH_SIZE, STEPS, NUM_LABELS, \
-    label_to_gesture, TC_B, TC_E
+    label_to_gesture, TC_B, TC_E, CLASSES, DENSE_DROPOUT, CONV_DROPOUT, DROPOUT_RATE
 
 cnn_config = [
     Layer(25, [1, 10], 1),
@@ -23,7 +24,6 @@ class EMG_CNN:
 
         # Convolution layers
         for layer in cnn_config:
-            # Convolution
             input_layer = tf.layers.conv2d(
                 kernel_initializer=xavier_initializer(seed=42),
                 kernel_size=layer.filter_size,
@@ -33,8 +33,9 @@ class EMG_CNN:
                 inputs=input_layer,
                 padding="same",
             )
+            if CONV_DROPOUT:
+                input_layer = tf.layers.dropout(inputs=input_layer, rate=DROPOUT_RATE)
 
-        # FC Layer
         shrinkage = 1
         for layer in cnn_config:
             shrinkage = shrinkage * layer.stride
@@ -44,12 +45,17 @@ class EMG_CNN:
         il_dim_y = wl // shrinkage
         input_layer = tf.reshape(input_layer, [-1, il_dim_x * il_dim_y * il_filters])
 
+        # Dense
         input_layer = tf.layers.dense(
             kernel_initializer=xavier_initializer(seed=42),
             activation=tf.nn.relu,
             inputs=input_layer,
             units=DENSE_UNITS,
         )
+
+        # Dropout
+        if DENSE_DROPOUT:
+            input_layer = tf.layers.dropout(inputs=input_layer, rate=DROPOUT_RATE)
 
         # Logits layer
         logits = tf.layers.dense(inputs=input_layer, units=NUM_LABELS, name="output_node")
@@ -150,9 +156,14 @@ class EMG_CNN:
             shuffle=False)
 
         # ACCURACY REPORT
-        accuracy = clf.evaluate(
-            input_fn=eval_input_fn)
+        accuracy = clf.evaluate(input_fn=eval_input_fn)
         print(accuracy)
+
+        # CONFUSION MATRIX
+        predictions = list(clf.predict(input_fn=eval_input_fn))
+        predictions = [p['classes'] for p in predictions]
+        predictions = predictions[0:len(labels)]
+        plot_confusion_matrix(labels, predictions, classes=CLASSES, normalize=True)
 
     @staticmethod
     def predict(clf, input_fn):
