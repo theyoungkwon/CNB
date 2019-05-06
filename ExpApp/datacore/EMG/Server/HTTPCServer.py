@@ -8,7 +8,7 @@ import gumpy
 import tensorflow as tf
 import numpy as np
 
-from ExpApp.Utils.datacore_constants import label_to_gesture
+from ExpApp.Utils.datacore_constants import label_to_gesture, get_random_gesture
 from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
 
 cfg = {
@@ -20,19 +20,22 @@ cfg = {
 clf = EMG_CNN.load(cfg["dir"], params=cfg)
 
 
-class CServer:
-    def __init__(self):
+class HTTPCServer:
+    def __init__(self, debug=False):
         def handler(*args):
-            RequestHandler(*args)
+            RequestHandler(*args, debug=debug)
 
-        server = HTTPServer(('192.168.137.1', 80), handler)
-        print("Listening ...")
+        ip = '192.168.137.1'
+        port = 80
+        server = HTTPServer((ip, port), handler)
+        print("HTTP Classification server on " + ip + ":" + str(port))
         server.serve_forever()
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-    def __init__(self, *args):
+    def __init__(self, *args, debug):
         self.EMG_data = []
+        self.debug = debug
         BaseHTTPRequestHandler.__init__(self, *args)
 
     def do_GET(self):
@@ -56,15 +59,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         emg_data = np.asarray([emg_data]).astype(np.float32)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": emg_data},
-            num_epochs=1,
-            shuffle=False)
-        predictions = clf.predict(input_fn=eval_input_fn)
-        for prediction in predictions:
-            gesture = label_to_gesture(prediction['classes'])
-        end_time = int(round(time.time() * 1000))
-        print(str(end_time - start_time) + ": " + gesture)
+        gesture = ""
+        if not self.debug:
+            eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x={"x": emg_data},
+                num_epochs=1,
+                shuffle=False)
+            predictions = clf.predict(input_fn=eval_input_fn)
+            for prediction in predictions:
+                gesture = label_to_gesture(prediction['classes'])
+            end_time = int(round(time.time() * 1000))
+            print(str(end_time - start_time) + ": " + gesture)
+        else:
+            gesture = get_random_gesture()
         time_value = 0
         if len(parsed) > 1:
             time_str = parsed[1][1].decode("utf-8")
@@ -75,10 +82,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         return
 
 
-def release():
-    CServer()
-
-
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    release()
+    tf.logging.set_verbosity(tf.logging.ERROR)
+    HTTPCServer(debug=True)
