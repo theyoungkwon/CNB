@@ -6,54 +6,89 @@ import sklearn
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 
-from ExpApp.Utils.datacore_constants import TC_B, TC_E, NUM_LABELS, IMG_X, CLASSES
+from ExpApp.Utils.datacore_constants import TC_B, TC_E, IMG_X, SET1
 
 data_directory = "5labels/"
-data_directory_main = "main/"
+data_directory_main = "trist/"
 trials_in_file = 28
-FPL_train = 3  # FILES PER LABEL
+FPL_train = 2  # FILES PER LABEL
 
 
 class EMGDataLoader:
 
-    def __init__(self) -> None:
+    def __init__(self, num_labels) -> None:
         super().__init__()
+        self.num_labels = num_labels
         self.is_removed = False
 
     def load(self):
         self.train_data = []
-        for label in range(NUM_LABELS):
+        for label in range(self.num_labels):
             for file_index in range(FPL_train):
                 filename = data_directory + "l" + str(label + 1) + "_" + str(file_index + 1)
                 record = np.loadtxt(filename)
                 raw_data = record[:, 0:IMG_X]
                 self.train_data.append(raw_data)
         self.test_data = []
-        for label in range(NUM_LABELS):
+        for label in range(self.num_labels):
             filename = data_directory + "l" + str(label + 1) + "_test"
             record = np.loadtxt(filename)
             raw_data = record[:, 0:IMG_X]
             self.test_data.append(raw_data)
 
+    def load_extended(self, _dir, _set):
+        dir_prefix = os.path.dirname(os.path.abspath(__file__)) + '/../../../data/app/Device.EMG/'
+        self.train_data = []
+        self.test_data = []
+        self.labels = _set
+        self.label_files = list(range(len(self.labels)))
+        files_for_label = {}
+        test_labels = []
+        train_labels = []
+        _dir = _dir + "/"
+
+        for i in range(len(_set)):
+            label = _set.__getitem__(i)
+            for file in os.listdir(dir_prefix + _dir):
+                if file.startswith(label):
+                    record = np.loadtxt(dir_prefix + _dir + file)
+                    raw_data = record[:, 0:IMG_X]
+
+                    if label in files_for_label:
+                        files_for_label[label] = files_for_label[label] + 1
+                    else:
+                        files_for_label[label] = 1
+
+                    if files_for_label[label] <= FPL_train:
+                        # TRAIN
+                        self.train_data.append(raw_data)
+                        train_labels = np.append(train_labels, np.repeat(i, trials_in_file))
+                    else:
+                        # TEST
+                        self.test_data.append(raw_data)
+                        test_labels = np.append(test_labels, np.repeat(i, trials_in_file))
+
+        return train_labels, test_labels
+
     def load_main(self):
         dir_prefix = os.path.dirname(os.path.abspath(__file__)) + '/../../../data/app/Device.EMG/'
         self.train_data = []
         self.test_data = []
-        self.labels = CLASSES
+        self.labels = []
         self.label_files = list(range(len(self.labels)))
         i = 0
         for label in self.labels:
 
             for file_index in range(FPL_train):
                 filename = dir_prefix + data_directory_main + label + "_" + str(file_index + 1)
-                try:
-                    record = np.loadtxt(filename)
-                    raw_data = record[:, 0:IMG_X]
-                    self.train_data.append(raw_data)
-                except:
-                    print(str(file_index) + " files loaded for " + label)
-                finally:
-                    self.label_files[i] = file_index
+                # try:
+                record = np.loadtxt(filename)
+                raw_data = record[:, 0:IMG_X]
+                self.train_data.append(raw_data)
+                # except:
+                #     print(str(file_index) + " files loaded for " + label)
+                # finally:
+            self.label_files[i] = FPL_train
 
             i += 1
 
@@ -64,13 +99,13 @@ class EMGDataLoader:
 
     def get_train_labels(self):
         labels = []
-        for i in range(NUM_LABELS):
+        for i in range(self.num_labels):
             labels = np.append(labels, np.repeat(i, trials_in_file * self.label_files[i]))
         return labels
 
     def get_test_labels(self):
         labels = []
-        for i in range(NUM_LABELS):
+        for i in range(self.num_labels):
             labels = np.append(labels, np.repeat(i, trials_in_file))
         return labels
 
@@ -143,17 +178,24 @@ class EMGDataLoader:
         bandpass = False
         if "bandpass" in params:
             bandpass = params["bandpass"]
+        _dir = data_directory_main
+        if "dir" in params:
+            _dir = params["dir"]
+        _set = SET1
+        if "set" in params:
+            _set = params["set"]
 
-        t = EMGDataLoader()
+        t = EMGDataLoader(num_labels=len(_set))
 
-        t.load_main()
+        # t.load_main()
+        # y_train = t.get_train_labels()
+        # y_test = t.get_test_labels()
+
+        y_train, y_test = t.load_extended(_dir, _set)
 
         t.split_into_trials()
         # t.bandpass(bandpass)
         t.trim_trials(x=start, y=end)
-
-        y_train = t.get_train_labels()
-        y_test = t.get_test_labels()
 
         if not test:  # TRAIN
             return np.asarray(t.train_trials).astype(np.float32), np.asarray(y_train).astype(np.int32)

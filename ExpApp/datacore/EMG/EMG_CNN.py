@@ -1,9 +1,11 @@
+from random import randint
+
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 
 from ExpApp.Utils.confusion_matrix_printer import plot_confusion_matrix
-from ExpApp.Utils.datacore_constants import Layer, IMG_X, IMG_Y, LEARNING_RATE, MOMENTUM, BATCH_SIZE, STEPS, NUM_LABELS, \
-    label_to_gesture, TC_B, TC_E, CLASSES, DENSE_DROPOUT, CONV_DROPOUT, DROPOUT_RATE
+from ExpApp.Utils.datacore_constants import Layer, IMG_X, IMG_Y, LEARNING_RATE, MOMENTUM, BATCH_SIZE, STEPS, \
+    label_to_gesture, TC_B, TC_E, DENSE_DROPOUT, CONV_DROPOUT, DROPOUT_RATE
 
 cnn_config = [
     Layer(25, [1, 10], 1),
@@ -18,7 +20,7 @@ DENSE_UNITS = 1024
 
 class EMG_CNN:
     @staticmethod
-    def build_cnn(features, wl=IMG_Y):
+    def build_cnn(features, wl=IMG_Y, num_labels=5):
         # Input layer
         input_layer = tf.reshape(features["x"], [-1, IMG_X, wl, 1], name="inputs")
 
@@ -58,7 +60,7 @@ class EMG_CNN:
             input_layer = tf.layers.dropout(inputs=input_layer, rate=DROPOUT_RATE)
 
         # Logits layer
-        logits = tf.layers.dense(inputs=input_layer, units=NUM_LABELS, name="output_node")
+        logits = tf.layers.dense(inputs=input_layer, units=num_labels, name="output_node")
 
         return logits, input_layer
 
@@ -80,8 +82,11 @@ class EMG_CNN:
         if "end" in params:
             end = params["end"]
         wl = end - start
+        num_labels = 5
+        if "set" in params:
+            num_labels = len(params["set"])
 
-        logits, input_layer = EMG_CNN.build_cnn(features, wl)
+        logits, input_layer = EMG_CNN.build_cnn(features, wl, num_labels)
 
         # Output
         predictions = {
@@ -163,7 +168,10 @@ class EMG_CNN:
         predictions = list(clf.predict(input_fn=eval_input_fn))
         predictions = [p['classes'] for p in predictions]
         predictions = predictions[0:len(labels)]
-        plot_confusion_matrix(labels, predictions, classes=CLASSES, normalize=True)
+        _dir = "sx"
+        if "dir" in params:
+            _dir = params["dir"] + str(randint(0, 10000))
+        plot_confusion_matrix(labels, predictions, classes=params["set"], normalize=True, name=_dir)
 
     @staticmethod
     def predict(clf, input_fn):

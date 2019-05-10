@@ -85,4 +85,4 @@ class RequestHandler(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     tf.logging.set_verbosity(tf.logging.ERROR)
-    HTTPCServer(debug=True)
+    HTTPCServer(debug=False)

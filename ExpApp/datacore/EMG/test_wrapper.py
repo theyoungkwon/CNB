@@ -1,27 +1,91 @@
 import datetime
 import os
 import time
+from random import randint
 
 import tensorflow as tf
 import numpy as np
 
-from ExpApp.Utils.datacore_constants import IMG_X, NUM_LABELS
+from ExpApp.Utils.datacore_constants import IMG_X, SET1, SET2, SET3, SET4, SET5
 from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
 from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
 
 
 def train_tests():
+    subjects = [
+        # "s1",
+        # "s2",
+        # "s3",
+        # "s4",
+        # "s5",
+        # "s6",
+        "s7",
+    ]
+    sets = [
+        SET1,
+        SET2,
+        SET3,
+        SET4,
+        SET5,
+    ]
+    # sample_test = {"start": 0, "end": 200, "dir": "s1/", "set": SET5}
+
     tests = [
         # end - start % 4 (CNN shrinkage) == 0
-        # {"start": 140, "end": 300},
-        # {"start": 0, "end": 200, "steps": 800},
-        {"start": 0, "end": 200},
-        # {"start": 100, "end": 360},
+        {"start": 0, "end": 200, "dir": "s1", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s1", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s1", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s1", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s1", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s2", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s2", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s2", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s2", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s2", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s3", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s3", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s3", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s3", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s3", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s4", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s4", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s4", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s4", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s4", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s5", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s5", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s5", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s5", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s5", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s6", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s6", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s6", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s6", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s6", "set": SET5},
+
+        {"start": 0, "end": 200, "dir": "s7", "set": SET1},
+        {"start": 0, "end": 200, "dir": "s7", "set": SET2},
+        {"start": 0, "end": 200, "dir": "s7", "set": SET3},
+        {"start": 0, "end": 200, "dir": "s7", "set": SET4},
+        {"start": 0, "end": 200, "dir": "s7", "set": SET5},
     ]
+
+    # for subject in subjects:
+    #     for _set in sets:
+    #         test = sample_test
+    #         test["dir"] = subject
+    #         test["set"] = _set
+    #         tests.append(test)
+
     i = 0
     for params in tests:
         i += 1
-        _dir = "Ubi" + str(NUM_LABELS) + "_" \
+        _dir = params["dir"] + "_" + str(len(params["set"])) + "_" +  str(randint(0, 10000)) + "_" \
                + str(params["start"]) + "_" \
                + str(params["end"]) + "_" \
                + (str(params["bandpass"]) if "bandpass" in params else "" + "_") \
@@ -33,7 +97,7 @@ def train_tests():
 
         start_time = int(round(time.time() * 1000))
         input_fn = EMGDataLoader.load_data_for_cnn
-        # input_fn = nina
+        # input_fn = ninaЛ
         clf = EMG_CNN.train(model_dir=_dir, params=params, input_fn=input_fn)
         # clf = EMG_CNN.load(model_dir=_dir, params=params    )
         EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)

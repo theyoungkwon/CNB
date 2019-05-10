@@ -12,7 +12,7 @@ PACKAGE_MAX_SIZE = 25
 cfg = {
     "start": 0,
     "end": 200,
-    "dir": "CNN_EXPORT",
+    "dir": "Ubi6_0_200",
     "shift": 160
 }
 clf = EMG_CNN.load(cfg["dir"], params=cfg)
@@ -30,7 +30,7 @@ class UDPCServer:
         self.debug = debug
         ip = '192.168.137.1'
         port = 90
-        buffer_size = 3610
+        buffer_size = 6000
         udp_server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         udp_server_socket.bind((ip, port))
         print("UDP Classification server on " + ip + ":" + str(port))
@@ -54,7 +54,8 @@ class UDPCServer:
                     shuffle=False)
                 predictions = clf.predict(input_fn=eval_input_fn)
                 for prediction in predictions:
-                    gesture = label_to_gesture(prediction['classes'])
+                    # gesture = label_to_gesture(prediction['classes'])
+                    gesture = get_random_gesture()
             else:
                 gesture = get_random_gesture()
             address = bytes_address_pair[1]
@@ -65,4 +66,4 @@ class UDPCServer:
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.ERROR)
-    UDPCServer(debug=True)
+    UDPCServer(debug=False)

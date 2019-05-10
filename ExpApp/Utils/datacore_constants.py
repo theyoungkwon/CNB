@@ -3,7 +3,7 @@ from random import randint
 
 BATCH_SIZE = 20
 SHUFFLE_BUFFER_SIZE = 1
-STEPS = 700
+STEPS = 1
 MOMENTUM = 0.9
 LEARNING_RATE = 0.001
 MAX_ITERATIONS = 1200
@@ -12,19 +12,69 @@ DENSE_DROPOUT = True
 CONV_DROPOUT = True
 DROPOUT_RATE = 0.5
 
-CLASSES = [
+# CLASSES = [
+#     # "fist",
+#     # "palm",
+#     # "thumb",
+#     # "point",
+#     # "two",
+#     # "peace",
+#     # "three",
+#     # "four",
+#     "cyl_grab",
+#     "hcyl_grab",
+#     "flat_grab",
+#     "hflat_grab",
+# ]
+
+SET1 = [  # social
     "fist",
     "palm",
-    "point",
     "thumb",
-    # "fg",
-    # "pg",
-    "cg",
-    # "ball",
-    # "ball_hard",
-    "peace"
+    "point",
+    "two",
 ]
-NUM_LABELS = len(CLASSES)
+
+SET2 = [  # numbers
+    "point",
+    "two",
+    "peace",
+    "three",
+    "four",
+]
+
+SET3 = [  # force grabs
+    "cyl_grab",
+    "hcyl_grab",
+    "flat_grab",
+    "hflat_grab",
+]
+
+SET4 = [  # social + force grabs
+    "fist",
+    "palm",
+    "thumb",
+    "point",
+    "two",
+    "cyl_grab",
+    "hcyl_grab",
+    "flat_grab",
+    "hflat_grab",
+]
+
+SET5 = [  # social + numbers + grabs
+    "fist",
+    "palm",
+    "thumb",
+    "point",
+    "two",
+    "three",
+    "four",
+    "cyl_grab",
+    "flat_grab",
+]
+
+# NUM_LABELS = len(CLASSES)
 
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
