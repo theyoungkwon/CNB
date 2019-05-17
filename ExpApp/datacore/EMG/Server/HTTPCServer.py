@@ -60,6 +60,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         gesture = ""
+        server_time = 0
         if not self.debug:
             eval_input_fn = tf.estimator.inputs.numpy_input_fn(
                 x={"x": emg_data},
@@ -70,6 +71,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 gesture = label_to_gesture(prediction['classes'])
             end_time = int(round(time.time() * 1000))
             print(str(end_time - start_time) + ": " + gesture)
+            server_time = end_time - start_time
         else:
             gesture = get_random_gesture()
         time_value = 0
@@ -78,11 +80,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             start = time_str.rfind('\"')
             end = time_str.find('-')
             time_value = int(time_str[start+1:end])
-        self.wfile.write(bytes(gesture + "_" + str(time_value), "utf8"))
+        self.wfile.write(bytes(gesture + "_" + str(time_value) + "_" + str(server_time), "utf8"))
         return
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     tf.logging.set_verbosity(tf.logging.ERROR)
-    HTTPCServer(debug=False)
+    HTTPCServer(debug=True)

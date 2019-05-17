@@ -1,5 +1,6 @@
 import ast
 import socket
+import time
 
 from ExpApp.Utils.datacore_constants import get_random_gesture, label_to_gesture
 
@@ -40,14 +41,16 @@ class UDPCServer:
             data = message.decode("utf-8")
             data = data.split("_")
             emg_str = data[0]
-            time = data[1]
+            client_time = data[1]
             gesture = ""
+            server_time = 0
             if not self.debug:
                 start = emg_str.find('[')
                 end = emg_str.rfind(']') + 1
                 emg_package = emg_str[start:end]
                 emg_data = ast.literal_eval(emg_package)[0:200]
                 emg_data = np.asarray([emg_data]).astype(np.float32)
+                start_time = int(round(time.time() * 1000))
                 eval_input_fn = tf.estimator.inputs.numpy_input_fn(
                     x={"x": emg_data},
                     num_epochs=1,
@@ -56,14 +59,16 @@ class UDPCServer:
                 for prediction in predictions:
                     # gesture = label_to_gesture(prediction['classes'])
                     gesture = get_random_gesture()
+                end_time = int(round(time.time() * 1000))
+                server_time = end_time - start_time
             else:
                 gesture = get_random_gesture()
             address = bytes_address_pair[1]
             print(address)
-            bytes_to_send = str.encode(self.formPacket(gesture + "_" + time))
+            bytes_to_send = str.encode(self.formPacket(gesture + "_" + client_time + "_" + str(server_time)))
             udp_server_socket.sendto(bytes_to_send, address)
 
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.ERROR)
-    UDPCServer(debug=False)
+    UDPCServer(debug=True)
