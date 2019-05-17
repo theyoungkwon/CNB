@@ -3,9 +3,9 @@ from random import randint
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 
-from ExpApp.Utils.confusion_matrix_printer import plot_confusion_matrix
 from ExpApp.Utils.datacore_constants import Layer, IMG_X, IMG_Y, LEARNING_RATE, MOMENTUM, BATCH_SIZE, STEPS, \
     label_to_gesture, TC_B, TC_E, DENSE_DROPOUT, CONV_DROPOUT, DROPOUT_RATE
+from sklearn.metrics import confusion_matrix
 
 cnn_config = [
     Layer(25, [1, 10], 1),
@@ -171,7 +171,7 @@ class EMG_CNN:
         _dir = "sx"
         if "dir" in params:
             _dir = params["dir"] + str(randint(0, 10000))
-        plot_confusion_matrix(labels, predictions, classes=params["set"], normalize=True, name=_dir)
+        return confusion_matrix(y_true=labels, y_pred=predictions)
 
     @staticmethod
     def predict(clf, input_fn):
