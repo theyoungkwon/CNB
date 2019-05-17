@@ -12,20 +12,20 @@ DENSE_DROPOUT = True
 CONV_DROPOUT = True
 DROPOUT_RATE = 0.5
 
-# CLASSES = [
-#     # "fist",
-#     # "palm",
-#     # "thumb",
-#     # "point",
-#     # "two",
-#     # "peace",
-#     # "three",
-#     # "four",
-#     "cyl_grab",
-#     "hcyl_grab",
-#     "flat_grab",
-#     "hflat_grab",
-# ]
+CLASSES = [
+    "fist",
+    "palm",
+    "thumb",
+    "point",
+    "two",
+    "peace",
+    "three",
+    "four",
+    "cyl_grab",
+    "hcyl_grab",
+    "flat_grab",
+    "hflat_grab",
+]
 
 SET1 = [  # social
     "fist",
@@ -38,7 +38,6 @@ SET1 = [  # social
 SET2 = [  # numbers
     "point",
     "two",
-    "peace",
     "three",
     "four",
 ]
@@ -74,7 +73,27 @@ SET5 = [  # social + numbers + grabs
     "flat_grab",
 ]
 
-# NUM_LABELS = len(CLASSES)
+SET6 = [  # everything
+    "fist",
+    "palm",
+    "thumb",
+    "point",
+    "two",
+    "three",
+    "four",
+    "cyl_grab",
+    "hcyl_grab",
+    "flat_grab",
+    "hflat_grab",
+]
+
+SET7 = [
+    "fist",
+    "point",
+    "two",
+    "three",
+    "four",
+]
 
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end

@@ -1,4 +1,3 @@
-import datetime
 import os
 import time
 from random import randint
@@ -6,103 +5,58 @@ from random import randint
 import tensorflow as tf
 import numpy as np
 
-from ExpApp.Utils.datacore_constants import IMG_X, SET1, SET2, SET3, SET4, SET5
+from ExpApp.Utils.confusion_matrix_printer import plot_confusion_matrix
+from ExpApp.Utils.datacore_constants import IMG_X, SET1, SET2, SET3, SET4, SET5, SET6, SET7
 from ExpApp.datacore.EMG.EMG_CNN import EMG_CNN
 from ExpApp.datacore.EMG.EMGDataLoader import EMGDataLoader
 
 
 def train_tests():
     subjects = [
-        # "s1",
+        "s0",
+        "s1",
         # "s2",
         # "s3",
         # "s4",
         # "s5",
         # "s6",
-        "s7",
+        # "s7",
+        # "s8",
+        # "s9"
     ]
+
+    i = 2
+
     sets = [
-        SET1,
-        SET2,
-        SET3,
-        SET4,
-        SET5,
-    ]
-    # sample_test = {"start": 0, "end": 200, "dir": "s1/", "set": SET5}
-
-    tests = [
-        # end - start % 4 (CNN shrinkage) == 0
-        {"start": 0, "end": 200, "dir": "s1", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s1", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s1", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s1", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s1", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s2", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s2", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s2", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s2", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s2", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s3", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s3", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s3", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s3", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s3", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s4", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s4", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s4", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s4", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s4", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s5", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s5", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s5", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s5", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s5", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s6", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s6", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s6", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s6", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s6", "set": SET5},
-
-        {"start": 0, "end": 200, "dir": "s7", "set": SET1},
-        {"start": 0, "end": 200, "dir": "s7", "set": SET2},
-        {"start": 0, "end": 200, "dir": "s7", "set": SET3},
-        {"start": 0, "end": 200, "dir": "s7", "set": SET4},
-        {"start": 0, "end": 200, "dir": "s7", "set": SET5},
+        # SET2,
+        # SET3,
+        # SET4,
+        SET7
     ]
 
-    # for subject in subjects:
-    #     for _set in sets:
-    #         test = sample_test
-    #         test["dir"] = subject
-    #         test["set"] = _set
-    #         tests.append(test)
 
-    i = 0
-    for params in tests:
+    for gesture_set in sets:
+        cum_cm = np.zeros((len(gesture_set), len(gesture_set)))
         i += 1
-        _dir = params["dir"] + "_" + str(len(params["set"])) + "_" +  str(randint(0, 10000)) + "_" \
-               + str(params["start"]) + "_" \
-               + str(params["end"]) + "_" \
-               + (str(params["bandpass"]) if "bandpass" in params else "" + "_") \
-               + (str(params["learning_rate"]) if "learning_rate" in params else "" + "_") \
-               + (str(params["steps"]) if "steps" in params else "" + "_") \
-               + (str(params["momentum"]) if "momentum" in params else "")
-        print(_dir)
-        # _dir = "CNN_EXPORT"
+        for subject in subjects:
+            params = {"start": 0, "end": 200, "dir": subject, "set": gesture_set}
 
-        start_time = int(round(time.time() * 1000))
-        input_fn = EMGDataLoader.load_data_for_cnn
-        # input_fn = ninaЛ
-        clf = EMG_CNN.train(model_dir=_dir, params=params, input_fn=input_fn)
-        # clf = EMG_CNN.load(model_dir=_dir, params=params    )
-        EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
-        end_time = int(round(time.time() * 1000))
-        print(end_time - start_time)
+            print("GESTURE SET: " + str(i) + " SUBJECT: " + params["dir"])
+            _dir = params["dir"] + "_GS" + str(i) + "_" + str(randint(0, 10000)) + "_" \
+                   + str(params["start"]) + "_" \
+                   + str(params["end"]) + "_" \
+                   + (str(params["bandpass"]) if "bandpass" in params else "" + "_") \
+                   + (str(params["learning_rate"]) if "learning_rate" in params else "" + "_") \
+                   + (str(params["steps"]) if "steps" in params else "" + "_") \
+                   + (str(params["momentum"]) if "momentum" in params else "")
+
+            input_fn = EMGDataLoader.load_data_for_cnn
+            clf = EMG_CNN.train(model_dir=_dir, params=params, input_fn=input_fn)
+            cum_cm = cum_cm + EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
+            cm = EMG_CNN.test(input_fn=input_fn, clf=clf, params=params)
+            plot_confusion_matrix(cm, classes=gesture_set, normalize=True, title="SET" + str(i) + " SUBJ :" + params["dir"])
+
+        plot_confusion_matrix(cum_cm, classes=gesture_set, normalize=True, title="Cumulative for set" + str(i))
 
 
 def load_test():
