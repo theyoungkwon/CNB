@@ -1,4 +1,5 @@
 from collections import deque
+from time import time
 from threading import Lock
 
 import myo
@@ -21,6 +22,7 @@ class EmgCollector(myo.DeviceListener):
         self.emg_data_queue = deque(maxlen=n)
         self.communicator = communicator
         self.data_handler = data_handler
+        self.imu = []
 
     def get_emg_data(self):
         with self.lock:
@@ -32,10 +34,23 @@ class EmgCollector(myo.DeviceListener):
     def on_emg(self, event):
         with self.lock:
             self.emg_data_queue.append((event.timestamp, event.emg))
+            # print(dir(event))
+            # print(event.orientation)
             timestamp = event.timestamp
             value = event.emg
+            value.extend(self.imu)
+            value.append(time())
             if self.communicator is not None:
-                value.append(timestamp)
+                # TODO append the timestamp from myo
                 self.communicator.data_signal.emit(value)
             if self.data_handler is not None:
                 self.data_handler(value)
+
+    def on_orientation(self, event):
+        orientation = event.orientation
+        acceleration = event.acceleration
+        gyroscope = event.gyroscope
+        self.imu = []
+        self.imu.extend(orientation)
+        self.imu.extend(acceleration)
+        self.imu.extend(gyroscope)

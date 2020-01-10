@@ -97,6 +97,7 @@ SET7 = [
 
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
+C_INTERVAL = 10  # classification interval every C_INTERVAL samples
 T2T_RATIO = 0.8  # train to test ratio
 
 IMG_X = 8  # number if channels define the matrix width
@@ -131,3 +132,16 @@ def label_to_gesture(label):
 
 def get_random_gesture():
     return gestures[str(randint(0, len(gestures) - 1))]
+
+
+class KeyConstants:
+    USE_IMU = 10  # 0 (NO) or 10 (YES)
+    CHANNELS_CONFIG = slice(-1)  # slice(2,4) or :(8 + KeyConstants.USE_IMU)
+    BEFORE = 40
+    AFTER = 10
+    MODEL_PATH = "keras_keys_friday"
+    EBATCH_SIZE = 5
+    ELR = 0.0001
+    EEPOCHS = 10
+    TOTAL_CHANNELS = 19 # 8 EMG | 10 IMU | 1 TS
+    RT_LAG = 6

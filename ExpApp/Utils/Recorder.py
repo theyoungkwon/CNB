@@ -17,6 +17,7 @@ class Recorder:
         print("Recording samples to file: " + file_name)
         self.samples = []
         self._dir = _dir
+        self.full_name = self._dir + "/" + FILE_LOCATION + self.subdir + self.file_name
 
     def start(self):
         pass
@@ -26,4 +27,4 @@ class Recorder:
 
     def stop(self):
         print("Flushing " + str(len(self.samples)) + " records  to the file: " + self.file_name)
-        numpy.savetxt(self._dir + "/" + FILE_LOCATION + self.subdir + self.file_name, self.samples)
+        numpy.savetxt(self.full_name, self.samples)

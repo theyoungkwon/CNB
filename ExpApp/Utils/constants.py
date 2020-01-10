@@ -3,6 +3,7 @@ from enum import Enum
 CHANNELS_NUMBER = 8
 FILE_LOCATION = '../../../data/app/'  # FIle directory
 DEBUG_SUBDIR = 'debug/'
+KEYS_SUFFIX = "_KEYS"
 
 class Device(Enum):
     EEG = 1,

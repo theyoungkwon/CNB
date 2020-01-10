@@ -2,8 +2,12 @@ import getopt
 import os
 import subprocess
 import sys
+import threading
+from time import time
 
 import os
+
+from ExpApp.Utils.KeyboardLogger import KeyboardLogger
 
 path_fix = os.path.dirname(os.path.abspath(__file__)) + "/"
 
@@ -34,21 +38,20 @@ RESUME_GRAPH = 'Resume graph'
 PAUSE_GRAPH = "Pause graph"
 
 matplotlib.use("Qt4Agg")
-import time
-import threading
 
 
-# TODO add timestamp to record
 class CustomMainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, device=Device.EEG, mock=False):
+    def __init__(self, device=Device.EEG, mock=False, log_keyboard=False):
         super(CustomMainWindow, self).__init__()
         self.communicator = Communicate()
         self.is_recording = False
         self.recorder = None
         self.device = device
         self.mock = mock
+        self.log_keyboard = log_keyboard
 
+        self.keyboard_logger = None
         self.threadpool = QThreadPool()
 
         self.setWindowTitle("ExpApp")
@@ -264,6 +267,9 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         if self.device == Device.EMG:
             subdir = str(Device.EMG) + "/"
         self.recorder = Recorder(_dir=path_fix, file_name=self.exp_params.to_file_name(), subdir=subdir)
+        if self.log_keyboard:
+            self.keyboard_logger = KeyboardLogger(file_name=self.recorder.full_name)
+            self.keyboard_logger.start()
         self.exp_params.exp_id += 1
         t.start()
 
@@ -275,6 +281,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         if self.exp_window is not None:
             del self.exp_window
             self.exp_window = None
+        if self.log_keyboard and self.keyboard_logger != None:
+            self.keyboard_logger.stop()
 
     def pause_graphs(self):
         self.is_paused = not self.is_paused
@@ -287,7 +295,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.recorder.record_sample(value)
 
     def data_handler(self, sample):
-        timestamp = time.time()
+        timestamp = time()
         value = sample.channel_data
         value.append(timestamp)
         self.communicator.data_signal.emit(value)
@@ -323,21 +331,25 @@ def except_hook(cls, exception, traceback):
 
 
 def main():
-    opts, args = getopt.getopt(sys.argv[1:], "md:")
+    opts, args = getopt.getopt(sys.argv[1:], "kmd:")
     device = Device.EEG
+    log_keyboard = False
     mock = False
     for option, value in opts:
         if option == "-d":
             device = Device[value]
+        elif option == "-k":
+            log_keyboard = True
         elif option == "-m":
             mock = True
     sys.excepthook = except_hook
     app = QtWidgets.QApplication(sys.argv)
-    CustomMainWindow(device, mock)
+    CustomMainWindow(device, mock, log_keyboard)  # TODO refactor to params
     sys.exit(app.exec_())
 
 
 # command line options
+# -k to log keyboard into _KEYS file
 # -d EEG/EMG device choice
 # -m mock. If present files EMGMOCK and EEGMOCK are going to used
 if __name__ == '__main__':
