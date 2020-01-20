@@ -6,22 +6,26 @@ import myo
 
 
 class EMGConnector:
-    def __init__(self, communicator, data_handler=None):
+    def __init__(self, communicator=None, data_handler=None, imu_handler=None):
         myo.init("C:\\myo\\myo64.dll")
         hub = myo.Hub()
-        listener = EmgCollector(50, communicator, data_handler)
+        listener = EmgCollector(n=50,  # redundant
+                                communicator=communicator,
+                                emg_data_handler=data_handler,
+                                imu_data_handler=imu_handler)
         while hub.run(listener.on_event, 500):
             pass
 
 
 class EmgCollector(myo.DeviceListener):
 
-    def __init__(self, n, communicator, data_handler):
+    def __init__(self, n, communicator, emg_data_handler, imu_data_handler=None):
         self.n = n
         self.lock = Lock()
         self.emg_data_queue = deque(maxlen=n)
         self.communicator = communicator
-        self.data_handler = data_handler
+        self.emg_data_handler = emg_data_handler
+        self.imu_data_handler = imu_data_handler
         self.imu = []
 
     def get_emg_data(self):
@@ -43,8 +47,8 @@ class EmgCollector(myo.DeviceListener):
             if self.communicator is not None:
                 # TODO append the timestamp from myo
                 self.communicator.data_signal.emit(value)
-            if self.data_handler is not None:
-                self.data_handler(value)
+            if self.emg_data_handler is not None:
+                self.emg_data_handler(value)
 
     def on_orientation(self, event):
         orientation = event.orientation
@@ -54,3 +58,5 @@ class EmgCollector(myo.DeviceListener):
         self.imu.extend(orientation)
         self.imu.extend(acceleration)
         self.imu.extend(gyroscope)
+        if self.imu_data_handler is not None:
+            self.imu_data_handler([orientation, acceleration, gyroscope])
