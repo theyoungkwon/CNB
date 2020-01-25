@@ -95,10 +95,41 @@ SET7 = [
     "four",
 ]
 
+INPUT_SET = [
+    "fist",
+    "thumb",
+    "point",
+    "two",
+    "three",
+    "four",
+    "palm"
+]
+
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
 C_INTERVAL = 10  # classification interval every C_INTERVAL samples
+KERAS_FRAME_LENGTH = 100  # samples in a trial
+KERAS_BATCH_SIZE = 5
+KERAS_EPOCHS = 7
 T2T_RATIO = 0.8  # train to test ratio
+
+class KeyboardControl:
+    DELETE_VOTES_LIMIT = 5
+    MAX_VOTES = 2
+
+    configQ = [
+        ["q", "a", "z"],
+        ["w", "s", "x"],
+        ["e", "d", "c"],
+        ["r", "f", "v"],
+        ["t", "g", "b"],
+        ["y", "h", "n"],
+        ["u", "j", "m"],
+        ["i", "k", " "],
+        ["o", "l", "<"],
+        ["p", ],
+    ]
+
 
 IMG_X = 8  # number if channels define the matrix width
 IMG_Y = TC_E - TC_B  # matrix height
@@ -137,11 +168,12 @@ def get_random_gesture():
 class KeyConstants:
     USE_IMU = 10  # 0 (NO) or 10 (YES)
     CHANNELS_CONFIG = slice(-1)  # slice(2,4) or :(8 + KeyConstants.USE_IMU)
-    BEFORE = 40
-    AFTER = 10
-    MODEL_PATH = "keras_keys_friday"
+    BEFORE = 50
+    AFTER = 20
+    MODEL_PATH = "keras_keys"
     EBATCH_SIZE = 5
     ELR = 0.0001
     EEPOCHS = 10
-    TOTAL_CHANNELS = 19 # 8 EMG | 10 IMU | 1 TS
+    TOTAL_CHANNELS = 19  # 8 EMG | 10 IMU | 1 TS
     RT_LAG = 6
+

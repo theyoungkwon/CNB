@@ -11,6 +11,7 @@ class DataLoader:
         @staticmethod
         def init():
             return {
+                "prefix": 100,
                 "end": TC_E,
                 "dir": "s0",
                 "all": False,

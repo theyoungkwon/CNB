@@ -12,7 +12,7 @@ class KeyfileMerger:
     def __init__(self, dir_="") -> None:
         super().__init__()
         self.dir_ = dir_
-        self.full_dir = os.path.dirname(os.path.abspath(__file__)) + '/../../data/app/Device.EMG/' + self.dir_
+        self.full_dir = os.path.dirname(os.path.abspath(__file__)) + '/../../data/app/Device.EMG/KeyLogger/s0/' + self.dir_
         self.emg_data = []
         self.keyboard_data = []
         self.x = []
