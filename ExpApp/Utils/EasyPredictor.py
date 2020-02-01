@@ -1,5 +1,6 @@
 import os
 from collections import deque
+from time import time
 
 import numpy as np
 from tensorflow_core.python.keras.saving.save import load_model
@@ -11,10 +12,15 @@ from ExpApp.Utils.datacore_constants import INPUT_SET, KERAS_FRAME_LENGTH, \
 
 class EasyPredictor:
 
-    def __init__(self, model_path=os.path.dirname(__file__) + "/../datacore/cnn_qwerty_debug", _set=INPUT_SET, debug=False, key_mode=False) -> None:
+    def __init__(self,
+                 model_path=os.path.dirname(__file__) + "/../datacore/cnn_qwerty_debug",
+                 _set=INPUT_SET,
+                 debug=False,
+                 key_mode=False,
+                 interval=KERAS_FRAME_LENGTH * .8) -> None:
         super().__init__()
         self.model = load_model(model_path)
-        self.interval = KERAS_FRAME_LENGTH * .7
+        self.interval = interval
         self._set = _set
         self.predicted = None
         self.debug = debug
@@ -25,7 +31,7 @@ class EasyPredictor:
         self.stack = deque(maxlen=self.height)
 
     def predict(self):
-
+        start_time = time()
         emg_data = np.asarray(self.stack).reshape((1, self.height, self.width, 1))
         emg_data = np.asarray(emg_data).astype(np.float32)
         y_pred = [np.argmax(y) for y in self.model.predict(emg_data, batch_size=KERAS_BATCH_SIZE)]
@@ -34,7 +40,7 @@ class EasyPredictor:
         else:
             self.predicted = y_pred[0]
         if self.debug:
-            print(self.predicted)
+            print(str((time() - start_time) * 1000) + " : " + self.predicted)
 
     def handleEMG(self, emg):
         # normal mode

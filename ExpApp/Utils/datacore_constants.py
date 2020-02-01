@@ -130,6 +130,14 @@ class KeyboardControl:
         ["p", ],
     ]
 
+    gesture_config_def = {
+        "point": 1,
+        "thumb": 2,
+        "two": 2,
+        "three": 3,
+        "four": 3,
+    }
+
 
 IMG_X = 8  # number if channels define the matrix width
 IMG_Y = TC_E - TC_B  # matrix height

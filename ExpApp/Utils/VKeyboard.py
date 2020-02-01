@@ -13,22 +13,11 @@ config3 = [
 ]
 
 
-gesture_config_def = {
-    "point": 1,
-    "thumb": 2,
-    "two": 2,
-    "three": 3,
-    "four": 3,
-}
-
-
-
-
 class VKeyboard:
     def __init__(self, config=None, max_votes=KeyboardControl.MAX_VOTES, gesture_config=None) -> None:
         super().__init__()
         if gesture_config is None:
-            gesture_config = gesture_config_def
+            gesture_config = KeyboardControl.gesture_config_def
         if config is None:
             config = config3
         self.key_config = config

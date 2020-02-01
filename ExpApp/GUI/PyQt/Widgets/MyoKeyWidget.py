@@ -42,7 +42,7 @@ class MyoKeyWidget(QWidget):
         self.frame = 1
         self.gesture = None
         self.vkeyboard = VKeyboard()
-        model_path = os.path.dirname(__file__) + "/../../../datacore/cnn_qwerty_release"
+        model_path = os.path.dirname(__file__) + "/../../../datacore/cnn_qwerty_debug"
         self.predictor = EasyPredictor(_set=INPUT_SET, model_path=model_path)
         self.bar_height = self.vkeyboard.max_votes
         self.bar_height_step = BAR_H / self.bar_height
@@ -171,7 +171,7 @@ class MyoKeyWidget(QWidget):
                 self.delete_votes += 1
                 if self.delete_votes > KeyboardControl.DELETE_VOTES_LIMIT:
                     if len(self.inputDisplay.text()) > 0:
-                        self.inputDisplay.setText(self.inputDisplay.text()[:-1])
+                        # self.inputDisplay.setText(self.inputDisplay.text()[:-1])
                         self.delete_votes = 0
                     return
 

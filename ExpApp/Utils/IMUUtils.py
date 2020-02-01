@@ -47,4 +47,8 @@ def is_angle_between(target, angle1, angle2):
             return (target - angle1) / rAngle
     else:
         if target >= angle1 or target <= angle2:
-            return (target - angle1) / rAngle
+            return (target + 360 - angle1) % 360 / rAngle
+
+
+if __name__ == '__main__':
+    is_angle_between(10, 350, 20)
