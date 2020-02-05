@@ -107,15 +107,15 @@ INPUT_SET = [
 
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
-C_INTERVAL = 10  # classification interval every C_INTERVAL samples
-KERAS_FRAME_LENGTH = 100  # samples in a trial
+C_INTERVAL = 40  # classification interval every C_INTERVAL samples
+KERAS_FRAME_LENGTH = 125  # samples in a trial
 KERAS_BATCH_SIZE = 5
 KERAS_EPOCHS = 7
 T2T_RATIO = 0.8  # train to test ratio
 
 class KeyboardControl:
     DELETE_VOTES_LIMIT = 5
-    MAX_VOTES = 2
+    MAX_VOTES = 1
 
     configQ = [
         ["q", "a", "z"],
@@ -126,8 +126,8 @@ class KeyboardControl:
         ["y", "h", "n"],
         ["u", "j", "m"],
         ["i", "k", " "],
-        ["o", "l", "<"],
-        ["p", ],
+        ["o", "l", " "],
+        ["p", "<", " "],
     ]
 
     gesture_config_def = {

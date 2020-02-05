@@ -52,6 +52,10 @@ class DataLoader:
                         files_for_label[label] = files_for_label[label] + 1
                     else:
                         files_for_label[label] = 1
+
+            if label in files_for_label:
+                print("{0} files read for label: {1}".format(files_for_label[label], label))
+
             self.data[label] = np.array(raw_data)
 
     def preprocess(self):

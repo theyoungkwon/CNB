@@ -28,7 +28,7 @@ class VKeyboard:
         self.max_votes = max_votes
         self.current_block = 0
 
-    def getBlockByAngle(self, angle, a_min, a_max):
+    def get_block_by_angle(self, angle, a_min, a_max):
         step = (a_max - a_min) / len(self.key_config)
         _angle = angle - a_min
         index = int(_angle / step)
@@ -38,14 +38,14 @@ class VKeyboard:
         self.current_block = new_current_block
         return self.key_config[self.current_block]
 
-    def get_block_by_Index(self, index):
+    def get_block_by_index(self, index):
         new_current_block = index
         if new_current_block != self.current_block:
             self.votes = [0] * self.block_size
         self.current_block = new_current_block
         return self.key_config[self.current_block]
 
-    def recordVote(self, gesture):
+    def record_vote(self, gesture):
         if not gesture in self.gesture_config:
             return None
         vote = self.gesture_config[gesture]

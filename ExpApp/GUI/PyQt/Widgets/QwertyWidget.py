@@ -21,7 +21,7 @@ class Communicate(QObject):
     data_signal = pyqtSignal(list)
 
 
-ANGLE_RANGE = 70  # 20 .. 45
+ANGLE_RANGE = 60  # 20 .. 90
 
 STEP = 4
 MARGIN = STEP * 10
@@ -30,19 +30,20 @@ MAX_H = STEP * 135
 KEY_W = STEP * 20
 KEY_H = STEP * 20
 KEY_M = STEP * 2
-KEY_EXTENSION = int(KEY_W * 2)
+ROW_OFFSET = KEY_W // 2.5
+KEY_EXTENSION = int(KEY_W * 1.5)
 PICKER_THICKNESS = STEP / 2
 
 KEY_HIGHLIGHT_PALETTE = [
-    "cfe1ff",
-    "abcaff",
-    "7aabff",
+    "#cfe1ff",
+    "#abcaff",
+    "#7aabff",
 ]
 
 SUGGESTIONS_HIGHLIGHT_PALETTE = [
-    "cffffd",
-    "abfffe",
-    "7afbff"
+    "#cffffd",
+    "#abfffe",
+    "#7afbff"
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -57,10 +58,10 @@ class QwertyWidget(QWidget):
         self.gesture = None
         self.max_votes = KeyboardControl.MAX_VOTES
         self.vkeyboard = VKeyboard(config=KeyboardControl.configQ)
-        self.model_path = os.path.dirname(__file__) + "/../../../datacore/cnn_qwerty_debug"
-        self.interval = 0.9
+        self.model_path = os.path.dirname(__file__) + "/../../../datacore/cnn_qwerty_125"
+        self.overlap = 0.5
         self.predictor = EasyPredictor(_set=INPUT_SET, model_path=self.model_path,
-                                       interval=self.interval * KERAS_FRAME_LENGTH)
+                                       w_overlap=self.overlap * KERAS_FRAME_LENGTH)
         self._rows = len(self.vkeyboard.key_config[0])
         self._columns = len(self.vkeyboard.key_config)
         self.selected_column = self._columns - 1
@@ -71,6 +72,7 @@ class QwertyWidget(QWidget):
         self.imu_set = False
         self.imu_fix = False
         self.tip_position = self.slidebar.width() - 20
+        self.input_letter = ""
         self.suggestion_votes = [0] * 3
         self.current_suggestion = 0
         log_file_name = self.get_log_file_name()
@@ -78,8 +80,8 @@ class QwertyWidget(QWidget):
 
     def get_log_file_name(self):
         # YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
-        return datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") + "_" + str(self.max_votes) + "_" + str(
-            self.interval)
+        return datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") \
+               + "_" + str(self.max_votes) + "_" + str(self.overlap)
 
     def init_communicators(self):
         self.communicator = Communicate()
@@ -105,7 +107,7 @@ class QwertyWidget(QWidget):
         self.input_display.setFont(fontParam)
 
         # suggestions area
-        keyboard_width = int(MAX_W * 0.65)
+        keyboard_width = self._columns * (KEY_W + KEY_M) + KEY_EXTENSION + self._rows * ROW_OFFSET - KEY_M * 2
         self.suggestions_container = QLabel(self)
         position = QRect(MARGIN, self.input_display.height() + int(1.5 * MARGIN), keyboard_width, KEY_H)
         self.suggestions_container.setGeometry(position)
@@ -164,7 +166,7 @@ class QwertyWidget(QWidget):
 
         # reset imu button
         self.reset_imu_button = QPushButton(self.settings_container)
-        self.reset_imu_button.setText('Reset IMU')
+        self.reset_imu_button.setText('Reset')
         self.reset_imu_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
         self.reset_imu_button.setStyleSheet(button_style + "background: white")
         fontParam.setPointSize(STEP * 4)
@@ -187,20 +189,20 @@ class QwertyWidget(QWidget):
         self.votes_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
         current_height += MARGIN // 2 + self.votes_input.height()
 
-        # interval input
-        self.interval_label = QLabel(self.settings_container)
-        self.interval_label.setFont(fontParam)
-        self.interval_label.setText("Interval:")
-        self.interval_label.setGeometry(MARGIN, current_height, setting_width // 2, MARGIN)
-        self.interval_input = QDoubleSpinBox(self.settings_container)
-        self.interval_input.setValue(self.interval)
-        self.interval_input.setSingleStep(0.1)
-        self.interval_input.setMaximum(2)
-        self.interval_input.setMinimum(0.1)
-        self.interval_input.valueChanged.connect(self.set_interval)
-        self.interval_input.setFont(fontParam)
-        self.interval_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
-        current_height += MARGIN // 2 + self.interval_input.height()
+        # overlap input
+        self.overlap_label = QLabel(self.settings_container)
+        self.overlap_label.setFont(fontParam)
+        self.overlap_label.setText("Overlap:")
+        self.overlap_label.setGeometry(MARGIN, current_height, setting_width // 2, MARGIN)
+        self.overlap_input = QDoubleSpinBox(self.settings_container)
+        self.overlap_input.setValue(self.overlap)
+        self.overlap_input.setSingleStep(0.1)
+        self.overlap_input.setMaximum(2)
+        self.overlap_input.setMinimum(0.1)
+        self.overlap_input.valueChanged.connect(self.set_overlap)
+        self.overlap_input.setFont(fontParam)
+        self.overlap_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
+        current_height += MARGIN // 2 + self.overlap_input.height()
 
         # interval input
         self.angle_label = QLabel(self.settings_container)
@@ -215,7 +217,7 @@ class QwertyWidget(QWidget):
         self.angle_input.valueChanged.connect(self.set_angle)
         self.angle_input.setFont(fontParam)
         self.angle_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
-        current_height += MARGIN // 2 + self.interval_input.height()
+        current_height += MARGIN // 2 + self.overlap_input.height()
 
         # record button
         self.record_button = QPushButton(self.settings_container)
@@ -233,19 +235,15 @@ class QwertyWidget(QWidget):
         self.angle_range = self.angle_input.value()
         self.reset_imu()
 
-    def set_interval(self):
-        self.interval = self.interval_input.value()
-        self.predictor = EasyPredictor(_set=INPUT_SET, model_path=self.model_path,
-                                       interval=self.interval * KERAS_FRAME_LENGTH)
+    def set_overlap(self):
+        self.overlap = self.overlap_input.value()
+        self.predictor.set_overlap(self.overlap)
         self.logger = MyoKeyLogger(self.get_log_file_name())
 
     def set_max_votes(self):
         self.max_votes = self.votes_input.value()
         self.vkeyboard = VKeyboard(config=KeyboardControl.configQ, max_votes=self.max_votes)
         self.logger = MyoKeyLogger(self.get_log_file_name())
-
-    def reset_interval(self):
-        self.predictor.i = 0
 
     def reset_imu(self, yaw=None):
         if yaw is None:
@@ -254,6 +252,9 @@ class QwertyWidget(QWidget):
         self.right_yaw = yaw
         self.left_yaw = (yaw + self.angle_range) % 360
         self.imu_set = True
+        self.logger = MyoKeyLogger(self.get_log_file_name())
+        self.predictor.reset()
+        self.input_display.setText("")
 
     def set_key_geometry(self, i, j, button):
         extra_margin = 0
@@ -262,7 +263,7 @@ class QwertyWidget(QWidget):
             extra_size += KEY_EXTENSION
         elif j > self.selected_column:
             extra_margin += KEY_EXTENSION
-        button.setGeometry(KEY_M * j + KEY_W * j + i * int(KEY_W / 2) + extra_margin,
+        button.setGeometry(KEY_M * j + KEY_W * j + i * ROW_OFFSET + extra_margin,
                            KEY_M * i + KEY_H * i,
                            KEY_W + extra_size, KEY_H)
 
@@ -273,11 +274,17 @@ class QwertyWidget(QWidget):
                     continue
                 key_button = self.keys[i * self._columns + j]
                 self.set_key_geometry(i, j, key_button)
+                stylesheet = button_style + "background: "
+                # current column
                 if j == self.selected_column:
-                    key_button.setStyleSheet(
-                        button_style + "background: #" + KEY_HIGHLIGHT_PALETTE[self.vkeyboard.votes[i]])
+                    if key_button.text() == self.input_letter:
+                        stylesheet += KEY_HIGHLIGHT_PALETTE[2]
+                    else:
+                        stylesheet += KEY_HIGHLIGHT_PALETTE[self.vkeyboard.votes[i]]
                 else:
-                    key_button.setStyleSheet(button_style + "background: white")
+                    stylesheet += "white"
+
+                key_button.setStyleSheet(stylesheet)
 
     def highlight_suggestion_area(self):
         for i in range(3):
@@ -288,7 +295,7 @@ class QwertyWidget(QWidget):
                     self.current_suggestion = i
                     self.suggestion_votes = [0] * 3
                 suggestion_box.setStyleSheet(
-                    button_style + "background: #" + SUGGESTIONS_HIGHLIGHT_PALETTE[self.suggestion_votes[i]])
+                    button_style + "background: " + SUGGESTIONS_HIGHLIGHT_PALETTE[self.suggestion_votes[i]])
             else:
                 suggestion_box.setStyleSheet(button_style + "background: white")
 
@@ -298,14 +305,16 @@ class QwertyWidget(QWidget):
         passed_columns = self._columns - self.selected_column
 
         dst_from_right = key_selection_range - tip_position
-        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * (KEY_W):
+        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * KEY_W:
             self.selected_column -= 1
-            self.reset_interval()
+            self.input_letter = ""
+            self.predictor.reset()
 
         dst_from_left = tip_position
         if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M):
             self.selected_column += 1
-            self.reset_interval()
+            self.input_letter = ""
+            self.predictor.reset()
 
         self.selected_column = min(self._columns - 1, max(0, self.selected_column))
 
@@ -337,7 +346,7 @@ class QwertyWidget(QWidget):
 
         # highlight column
         self.get_current_column()
-        self.vkeyboard.get_block_by_Index(self.selected_column)
+        self.vkeyboard.get_block_by_index(self.selected_column)
         self.highlight_suggestion_area()
         self.highlight_column()
 
@@ -360,14 +369,15 @@ class QwertyWidget(QWidget):
     def receive_data(self, data):
 
         self.handle_imu(data[8:-1])
-        gesture = self.predictor.handleEMG(data[:8])
+        gesture = self.predictor.handle_emg(data[:8])
         if gesture is not None:
             self.gesture = gesture
-            input_letter = self.vkeyboard.recordVote(self.gesture)
+            input_letter = self.vkeyboard.record_vote(self.gesture)
             if gesture != "palm":
                 self.logger.record_gesture(gesture)
             if input_letter is not None:
                 self.logger.record_letter(input_letter)
+                self.input_letter = input_letter
                 self.suggestion_votes = [0] * 3
                 if input_letter == "<":
                     # delete last character
@@ -375,6 +385,7 @@ class QwertyWidget(QWidget):
                 else:
                     # append input
                     self.input_display.setText(self.input_display.text() + input_letter)
+                self.predictor.reset()
 
                 # update suggestions
                 last_word = self.input_display.text().split(" ")[-1]
@@ -399,6 +410,7 @@ class QwertyWidget(QWidget):
                         self.input_display.setText(new_text + " ")
                         for i in range(3):
                             self.suggestion_labels[i].setText("")
+                    self.predictor.reset()
 
         self.update()
 

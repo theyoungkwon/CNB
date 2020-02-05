@@ -137,7 +137,7 @@ class MyoKeyWidget(QWidget):
             painter.drawPath(path_painter)
 
         # bar letters
-        block = self.vkeyboard.getBlockByAngle(angle, MIN_ANGLE, MAX_ANGLE)
+        block = self.vkeyboard.get_block_by_angle(angle, MIN_ANGLE, MAX_ANGLE)
         painter.setPen(QPen(QColor.fromRgb(0x000000), 4, Qt.SolidLine))
         font = painter.font()
         font.setBold(True)
@@ -162,7 +162,7 @@ class MyoKeyWidget(QWidget):
 
         self.handleIMU(data[8:-1])
         # TODO move prediction into separate thread
-        gesture = self.predictor.handleEMG(data[:8])
+        gesture = self.predictor.handle_emg(data[:8])
         if gesture is not None:
             self.gesture = gesture
 
@@ -176,7 +176,7 @@ class MyoKeyWidget(QWidget):
                     return
 
             # handle other commands
-            input_letter = self.vkeyboard.recordVote(self.gesture)
+            input_letter = self.vkeyboard.record_vote(self.gesture)
             if input_letter is not None:
                 self.delete_votes = 0
                 self.inputDisplay.setText(self.inputDisplay.text() + input_letter)
