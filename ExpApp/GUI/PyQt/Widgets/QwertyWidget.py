@@ -10,10 +10,10 @@ from PyQt5.QtCore import *
 from EMG.EMGConnector import EMGConnector
 from ExpApp.Utils import IMUUtils
 
-from ExpApp.Utils.EasyPredictor import EasyPredictor
+from ExpApp.Utils.DummyPredictor import EasyPredictor
 from ExpApp.Utils.VKeyboard import VKeyboard
-from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, KERAS_FRAME_LENGTH
-from ExpApp.Utils.dictionary import Dictionary
+from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, KERAS_FRAME_LENGTH, RT_OVERLAP
+from ExpApp.Utils.Dictionary import Dictionary
 from ExpApp.Utils.MyoKeyLogger import MyoKeyLogger
 
 
@@ -21,7 +21,7 @@ class Communicate(QObject):
     data_signal = pyqtSignal(list)
 
 
-ANGLE_RANGE = 60  # 20 .. 90
+ANGLE_RANGE = 45  # 20 .. 90
 
 STEP = 4
 MARGIN = STEP * 10
@@ -43,7 +43,19 @@ KEY_HIGHLIGHT_PALETTE = [
 SUGGESTIONS_HIGHLIGHT_PALETTE = [
     "#cffffd",
     "#abfffe",
-    "#7afbff"
+    "#7afbff",
+    "#3df9ff",
+]
+
+# TODO parse directory and get names
+PARTICIPANT_LIST = [
+    "Kirill",
+    "Young"
+]
+
+# TODO get available classifier time windows
+TIME_WINDOWS = [
+    125, 150, 200
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -53,15 +65,17 @@ class QwertyWidget(QWidget):
 
     def __init__(self):
         super().__init__()
+        self.is_ac_enabled = True
+        self.is_pred_enabled = True
         self.init_communicators()
         self.angle_range = ANGLE_RANGE
         self.gesture = None
         self.max_votes = KeyboardControl.MAX_VOTES
+        self.max_suggestion_votes = KeyboardControl.MAX_SUGGESTION_VOTES
         self.vkeyboard = VKeyboard(config=KeyboardControl.configQ)
-        self.model_path = os.path.dirname(__file__) + "/../../../datacore/cnn_qwerty_125"
-        self.overlap = 0.5
-        self.predictor = EasyPredictor(_set=INPUT_SET, model_path=self.model_path,
-                                       w_overlap=self.overlap * KERAS_FRAME_LENGTH)
+        self.overlap = RT_OVERLAP
+        self.participant = PARTICIPANT_LIST[0]
+        self.w_length = TIME_WINDOWS[0]
         self._rows = len(self.vkeyboard.key_config[0])
         self._columns = len(self.vkeyboard.key_config)
         self.selected_column = self._columns - 1
@@ -77,10 +91,20 @@ class QwertyWidget(QWidget):
         self.current_suggestion = 0
         log_file_name = self.get_log_file_name()
         self.logger = MyoKeyLogger(file_name=log_file_name)
+        self.load_model()
+        self.dictionary = Dictionary()
+
+    def load_model(self):
+        self.model_path = \
+            os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(self.w_length)
+        self.predictor = EasyPredictor(_set=INPUT_SET, model_path=self.model_path, w_length=self.w_length,
+                                       w_overlap=self.overlap * KERAS_FRAME_LENGTH, debug=False)
+        print("{0} loaded".format(self.model_path))
 
     def get_log_file_name(self):
-        # YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
-        return datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") \
+        # participant_window_YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
+        return self.participant + "_" + str(self.w_length) \
+               + "_" + datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") \
                + "_" + str(self.max_votes) + "_" + str(self.overlap)
 
     def init_communicators(self):
@@ -160,19 +184,40 @@ class QwertyWidget(QWidget):
 
         # gesture display
         self.gesture_holder = QLabel(self.settings_container)
-        self.gesture_holder.setGeometry(int((setting_width - 80) / 2), 0, 80, 80)
+        self.gesture_holder.setGeometry(MARGIN, 0, 80, 80)
         self.gesture_holder.setStyleSheet("background: transparent;")
         current_height = self.gesture_holder.height() + MARGIN // 2
 
-        # reset imu button
-        self.reset_imu_button = QPushButton(self.settings_container)
-        self.reset_imu_button.setText('Reset')
-        self.reset_imu_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
-        self.reset_imu_button.setStyleSheet(button_style + "background: white")
+        # enable autocorrect
+        ac_label = QLabel(self.settings_container)
         fontParam.setPointSize(STEP * 4)
-        self.reset_imu_button.setFont(fontParam)
-        self.reset_imu_button.clicked.connect(lambda: self.reset_imu())
-        current_height += MARGIN // 2 + self.reset_imu_button.height()
+        ac_label.setGeometry(setting_width // 2, 0, STEP * 30, STEP * 10)
+        ac_label.setFont(fontParam)
+        ac_label.setText("Autocorrect:")
+        self.ac_checkbox = QCheckBox(self.settings_container)
+        self.ac_checkbox.setChecked(self.is_ac_enabled)
+        self.ac_checkbox.stateChanged.connect(self.set_ac)
+        checkbox_size = 14
+        self.ac_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 4, checkbox_size, checkbox_size)
+
+        # enable predictions
+        pred_label = QLabel(self.settings_container)
+        pred_label.setGeometry(setting_width // 2, 40, STEP * 30, STEP * 10)
+        pred_label.setFont(fontParam)
+        pred_label.setText("Predictions:")
+        self.pred_checkbox = QCheckBox(self.settings_container)
+        self.pred_checkbox.setChecked(self.is_pred_enabled)
+        self.pred_checkbox.stateChanged.connect(self.set_pred)
+        self.pred_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 14, checkbox_size, checkbox_size)
+
+        # reset button
+        self.reset_button = QPushButton(self.settings_container)
+        self.reset_button.setText('Reset')
+        self.reset_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
+        self.reset_button.setStyleSheet(button_style + "background: white")
+        self.reset_button.setFont(fontParam)
+        self.reset_button.clicked.connect(lambda: self.reset())
+        current_height += MARGIN // 3 + self.reset_button.height()
 
         # votes input
         self.votes_label = QLabel(self.settings_container)
@@ -187,7 +232,7 @@ class QwertyWidget(QWidget):
         self.votes_input.valueChanged.connect(self.set_max_votes)
         self.votes_input.setFont(fontParam)
         self.votes_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
-        current_height += MARGIN // 2 + self.votes_input.height()
+        current_height += MARGIN // 3 + self.votes_input.height()
 
         # overlap input
         self.overlap_label = QLabel(self.settings_container)
@@ -196,28 +241,43 @@ class QwertyWidget(QWidget):
         self.overlap_label.setGeometry(MARGIN, current_height, setting_width // 2, MARGIN)
         self.overlap_input = QDoubleSpinBox(self.settings_container)
         self.overlap_input.setValue(self.overlap)
-        self.overlap_input.setSingleStep(0.1)
-        self.overlap_input.setMaximum(2)
+        self.overlap_input.setSingleStep(0.01)
+        self.overlap_input.setMaximum(1)
+        self.overlap_input.setValue(RT_OVERLAP)
         self.overlap_input.setMinimum(0.1)
         self.overlap_input.valueChanged.connect(self.set_overlap)
         self.overlap_input.setFont(fontParam)
         self.overlap_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
-        current_height += MARGIN // 2 + self.overlap_input.height()
+        current_height += MARGIN // 3 + self.overlap_input.height()
 
-        # interval input
+        # angle input
         self.angle_label = QLabel(self.settings_container)
         self.angle_label.setFont(fontParam)
         self.angle_label.setText("Angle:")
         self.angle_label.setGeometry(MARGIN, current_height, setting_width // 2, MARGIN)
         self.angle_input = QDoubleSpinBox(self.settings_container)
         self.angle_input.setValue(self.angle_range)
-        self.angle_input.setSingleStep(1)
+        self.angle_input.setSingleStep(5)
         self.angle_input.setMinimum(10)
         self.angle_input.setMaximum(90)
         self.angle_input.valueChanged.connect(self.set_angle)
         self.angle_input.setFont(fontParam)
         self.angle_input.setGeometry(setting_width // 2 - MARGIN, current_height, setting_width // 2, MARGIN)
-        current_height += MARGIN // 2 + self.overlap_input.height()
+        current_height += MARGIN // 3 + self.overlap_input.height()
+
+        # classifier selection
+        self.participant_input = QComboBox(self.settings_container)
+        self.participant_input.addItems(PARTICIPANT_LIST)
+        self.participant_input.setGeometry(MARGIN, current_height, setting_width // 2 - MARGIN, STEP * 8)
+        self.participant_input.setFont(fontParam)
+        self.participant_input.currentIndexChanged.connect(self.set_participant)
+
+        self.w_length_input = QComboBox(self.settings_container)
+        self.w_length_input.addItems(list(map(str, TIME_WINDOWS)))
+        self.w_length_input.setGeometry(setting_width // 2, current_height, setting_width // 2 - MARGIN, STEP * 8)
+        self.w_length_input.setFont(fontParam)
+        self.w_length_input.currentIndexChanged.connect(self.set_w_length)
+        current_height += MARGIN // 3 + self.participant_input.height()
 
         # record button
         self.record_button = QPushButton(self.settings_container)
@@ -226,10 +286,27 @@ class QwertyWidget(QWidget):
         self.record_button.setStyleSheet(button_style + "background: white")
         self.record_button.setFont(fontParam)
         self.record_button.clicked.connect(lambda: self.logger.stop())
-        current_height += MARGIN // 2 + self.reset_imu_button.height()
+        current_height += MARGIN // 2 + self.reset_button.height()
 
         self.show()
         self.input_display.setFocus()
+
+    def set_ac(self):
+        self.is_ac_enabled = self.ac_checkbox.isChecked()
+
+    def set_pred(self):
+        self.is_pred_enabled = self.pred_checkbox.isChecked()
+        if not self.is_pred_enabled:
+            for suggestion_label in self.suggestion_labels:
+                suggestion_label.setText("")
+
+    def set_participant(self):
+        self.participant = self.participant_input.currentText()
+        self.load_model()
+
+    def set_w_length(self):
+        self.w_length = int(self.w_length_input.currentText())
+        self.load_model()
 
     def set_angle(self):
         self.angle_range = self.angle_input.value()
@@ -252,9 +329,14 @@ class QwertyWidget(QWidget):
         self.right_yaw = yaw
         self.left_yaw = (yaw + self.angle_range) % 360
         self.imu_set = True
+
+    def reset(self, yaw=None):
+        self.reset_imu(yaw)
         self.logger = MyoKeyLogger(self.get_log_file_name())
         self.predictor.reset()
         self.input_display.setText("")
+        for suggestion_label in self.suggestion_labels:
+            suggestion_label.setText("")
 
     def set_key_geometry(self, i, j, button):
         extra_margin = 0
@@ -387,21 +469,39 @@ class QwertyWidget(QWidget):
                     self.input_display.setText(self.input_display.text() + input_letter)
                 self.predictor.reset()
 
-                # update suggestions
-                last_word = self.input_display.text().split(" ")[-1]
-                if not 0 == len(last_word):
-                    predictions = Dictionary.predict_word(last_word)
-                    for i in range(3):
-                        self.suggestion_labels[i].setText(predictions[i])
-                else:
-                    for i in range(3):
-                        self.suggestion_labels[i].setText("")
+                words = []
+                last_word = ""
+                i = 1
+                if self.is_pred_enabled or self.is_ac_enabled:
+                    words = self.input_display.text().split(" ")
+                    last_word = words[-i]
+                    while len(last_word) == 0 and i < len(words):
+                        i += 1
+                        last_word = words[-i]
+
+                # autocorrection
+                if self.is_ac_enabled and input_letter == " ":
+                    last_word_fixed = self.dictionary.correct_word(last_word)
+                    if last_word_fixed != last_word:
+                        words[-i] = last_word_fixed
+                        new_text = " ".join(words)
+                        self.input_display.setText(new_text)
+
+                # update predictions
+                if self.is_pred_enabled:
+                    predictions = self.dictionary.predict_word(last_word)
+                    for j in range(3):
+                        self.suggestion_labels[j].setText("")
+                    j = 0
+                    for prediction in predictions:
+                        self.suggestion_labels[j].setText(prediction)
+                        j += 1
 
             # select suggestion
-            if gesture == "thumb123":
+            if gesture == "fist":
                 self.suggestion_votes[self.current_suggestion] += 1
                 self.highlight_suggestion_area()
-                if self.suggestion_votes[self.current_suggestion] == self.max_votes:
+                if self.suggestion_votes[self.current_suggestion] == self.max_suggestion_votes:
                     self.suggestion_votes = [0] * 3
                     words = self.input_display.text().split(" ")
                     words[-1] = self.suggestion_labels[self.current_suggestion].text()

@@ -112,10 +112,12 @@ KERAS_FRAME_LENGTH = 125  # samples in a trial
 KERAS_BATCH_SIZE = 5
 KERAS_EPOCHS = 7
 T2T_RATIO = 0.8  # train to test ratio
+RT_OVERLAP = 0.9
+RT_LAG = 20
 
 class KeyboardControl:
-    DELETE_VOTES_LIMIT = 5
-    MAX_VOTES = 1
+    MAX_SUGGESTION_VOTES = 3
+    MAX_VOTES = 2
 
     configQ = [
         ["q", "a", "z"],

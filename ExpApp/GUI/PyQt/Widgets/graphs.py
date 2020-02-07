@@ -2,7 +2,7 @@ import matplotlib
 import numpy as np
 from PyQt5.QtCore import QThread
 
-from ExpApp.Utils.constants import X_LIM, DPI, UPDATE_AXIS_INTERVAL, REDRAW_INTERVAL, BACKGROUND_COLOR
+from ExpApp.Utils.constants import X_LIM, DPI, REDRAW_INTERVAL, BACKGROUND_COLOR
 from ExpApp.Utils.constants import CHANNELS_NUMBER
 
 matplotlib.use("Qt4Agg")
@@ -61,16 +61,14 @@ class GraphWidget(FigureCanvas, TimedAnimation):
 
     def _init_draw(self):
         for i in range(len(self.subplots)):
+            self.subplots[i].set_ylim(-128, +128)
             for l in [self.lines[i], self.line_tails[i], self.line_heads[i]]:
                 l.set_data([], [])
 
     def addData(self, value):
         self.addedData.append(value)
         self.sample_num = self.sample_num + 1
-        if self.sample_num % UPDATE_AXIS_INTERVAL == 0:
-            for i in range(0, len(self.subplots)):
-                v = float(value[i])
-                self.subplots[i].set_ylim(v + v / 10, v - v / 10)
+
 
     def _step(self, *args):
         try:

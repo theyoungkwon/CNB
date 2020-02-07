@@ -7,7 +7,7 @@ from tensorflow_core.python.keras.saving.save import load_model
 
 from EMG.EMGConnector import EMGConnector
 from ExpApp.Utils.datacore_constants import INPUT_SET, KERAS_FRAME_LENGTH, \
-    KERAS_BATCH_SIZE, KeyConstants
+    KERAS_BATCH_SIZE, KeyConstants, RT_LAG, RT_OVERLAP
 
 
 class EasyPredictor:
@@ -17,8 +17,8 @@ class EasyPredictor:
                  _set=INPUT_SET,
                  debug=False,
                  w_length=KERAS_FRAME_LENGTH,
-                 lag_after_reset=15,
-                 w_overlap=int(KERAS_FRAME_LENGTH * .5)) -> None:
+                 lag_after_reset=RT_LAG,
+                 w_overlap=int(KERAS_FRAME_LENGTH * RT_OVERLAP)) -> None:
         super().__init__()
         self.model = load_model(model_path)
         self.w_overlap = w_overlap

@@ -16,8 +16,7 @@ BACKGROUND_COLOR = "#808080"
 # Graph constants
 X_LIM = 200
 DPI = 100
-UPDATE_AXIS_INTERVAL = 3  # update y axis scale every UPDATE_AXIS_INTERVAL samples
-REDRAW_INTERVAL = 4  # new frame every REDRAW_INTERVAL milliseconds
+REDRAW_INTERVAL = 10  # new frame every REDRAW_INTERVAL milliseconds
 GRAPH_PROPORTION = 0.1  # set y axis as 2 * GRAPH_PROPORTION * current_value
 
 # Experiment defaults
