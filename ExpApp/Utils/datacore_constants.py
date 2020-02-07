@@ -108,15 +108,19 @@ INPUT_SET = [
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
 C_INTERVAL = 40  # classification interval every C_INTERVAL samples
-KERAS_FRAME_LENGTH = 125  # samples in a trial
 KERAS_BATCH_SIZE = 5
-KERAS_EPOCHS = 7
-T2T_RATIO = 0.8  # train to test ratio
+KERAS_EPOCHS = 10
 RT_OVERLAP = 0.9
 RT_LAG = 20
 
+WINDOW_LENGTHS = [
+    100,
+    125,
+    150
+]
+
 class KeyboardControl:
-    MAX_SUGGESTION_VOTES = 3
+    MAX_SUGGESTION_VOTES = 2
     MAX_VOTES = 2
 
     configQ = [
@@ -143,9 +147,6 @@ class KeyboardControl:
 
 IMG_X = 8  # number if channels define the matrix width
 IMG_Y = TC_E - TC_B  # matrix height
-
-WINDOW_LENGTH_P = "window_length"
-
 
 class Layer:
     filters = 0

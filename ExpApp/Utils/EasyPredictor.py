@@ -6,8 +6,8 @@ import numpy as np
 from tensorflow_core.python.keras.saving.save import load_model
 
 from EMG.EMGConnector import EMGConnector
-from ExpApp.Utils.datacore_constants import INPUT_SET, KERAS_FRAME_LENGTH, \
-    KERAS_BATCH_SIZE, KeyConstants, RT_LAG, RT_OVERLAP
+from ExpApp.Utils.datacore_constants import INPUT_SET, \
+    KERAS_BATCH_SIZE, KeyConstants, RT_LAG, RT_OVERLAP, WINDOW_LENGTHS
 
 
 class EasyPredictor:
@@ -16,12 +16,11 @@ class EasyPredictor:
                  model_path=os.path.dirname(__file__) + "/../datacore/cnn_qwerty_debug",
                  _set=INPUT_SET,
                  debug=False,
-                 w_length=KERAS_FRAME_LENGTH,
+                 w_length=WINDOW_LENGTHS[0],
                  lag_after_reset=RT_LAG,
-                 w_overlap=int(KERAS_FRAME_LENGTH * RT_OVERLAP)) -> None:
+                 w_overlap=RT_OVERLAP) -> None:
         super().__init__()
         self.model = load_model(model_path)
-        self.w_overlap = w_overlap
         self._set = _set
         self.predicted = None
         self.debug = debug
@@ -29,6 +28,7 @@ class EasyPredictor:
         self.lag_counter = lag_after_reset
         self.width = 8
         self.w_length = w_length
+        self.w_overlap = int(w_overlap * self.w_length)
         self.stack = deque(maxlen=self.w_length)
 
     def predict(self):
@@ -52,7 +52,7 @@ class EasyPredictor:
     def set_length(self, length):
         length = min(200, max(20, length))
         self.w_length = length
-        self.w_overlap = self.w_overlap * self.w_length
+        self.w_overlap = int(self.w_overlap * self.w_length)
         self.stack = deque(maxlen=self.w_length)
 
     def handle_emg(self, emg):

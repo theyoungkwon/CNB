@@ -99,16 +99,19 @@ def tests():
     _interval = 20
 
     for _subj in subjects:
-        params = {"end": _end, "dir": _subj, "set": _set}
-        x, y = DataLoader().load(params)
+        for _end in w_lengths:
+            params = {"end": _end, "dir": _subj, "set": _set}
+            x, y = DataLoader().load(params)
 
-        print("CNN")
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, shuffle=True, random_state=42)
-        y_train = to_categorical(y_train)
-        x_train = reshape_for_cnn(x_train)
-        x_test = reshape_for_cnn(x_test)
-        cnn = get_cnn(x_train[0], len(_set))
-        test_model(cnn, x_train, x_test, y_train, y_test)
+            print("CNN")
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=True)
+            y_train = to_categorical(y_train)
+            x_train = reshape_for_cnn(x_train)
+            x_test = reshape_for_cnn(x_test)
+            cnn = get_cnn_adv(x_train[0], len(_set))
+            model, accuracy = test_model(cnn, x_train, x_test, y_train, y_test)
+            model.save(_subj + "_" + str(_end))
+
 
         print("CLSTM")
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, shuffle=False, random_state=42)

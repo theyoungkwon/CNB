@@ -10,9 +10,10 @@ from PyQt5.QtCore import *
 from EMG.EMGConnector import EMGConnector
 from ExpApp.Utils import IMUUtils
 
-from ExpApp.Utils.DummyPredictor import EasyPredictor
+# from ExpApp.Utils.DummyPredictor import EasyPredictor
+from ExpApp.Utils.EasyPredictor import EasyPredictor
 from ExpApp.Utils.VKeyboard import VKeyboard
-from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, KERAS_FRAME_LENGTH, RT_OVERLAP
+from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS
 from ExpApp.Utils.Dictionary import Dictionary
 from ExpApp.Utils.MyoKeyLogger import MyoKeyLogger
 
@@ -49,13 +50,8 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 
 # TODO parse directory and get names
 PARTICIPANT_LIST = [
-    "Kirill",
-    "Young"
-]
-
-# TODO get available classifier time windows
-TIME_WINDOWS = [
-    125, 150, 200
+    "kirill",
+    "young"
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -67,7 +63,6 @@ class QwertyWidget(QWidget):
         super().__init__()
         self.is_ac_enabled = True
         self.is_pred_enabled = True
-        self.init_communicators()
         self.angle_range = ANGLE_RANGE
         self.gesture = None
         self.max_votes = KeyboardControl.MAX_VOTES
@@ -75,7 +70,7 @@ class QwertyWidget(QWidget):
         self.vkeyboard = VKeyboard(config=KeyboardControl.configQ)
         self.overlap = RT_OVERLAP
         self.participant = PARTICIPANT_LIST[0]
-        self.w_length = TIME_WINDOWS[0]
+        self.w_length = WINDOW_LENGTHS[0]
         self._rows = len(self.vkeyboard.key_config[0])
         self._columns = len(self.vkeyboard.key_config)
         self.selected_column = self._columns - 1
@@ -91,15 +86,38 @@ class QwertyWidget(QWidget):
         self.current_suggestion = 0
         log_file_name = self.get_log_file_name()
         self.logger = MyoKeyLogger(file_name=log_file_name)
+        self.predictor = None
         self.load_model()
         self.dictionary = Dictionary()
+        self.init_communicators()
 
     def load_model(self):
-        self.model_path = \
-            os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(self.w_length)
-        self.predictor = EasyPredictor(_set=INPUT_SET, model_path=self.model_path, w_length=self.w_length,
-                                       w_overlap=self.overlap * KERAS_FRAME_LENGTH, debug=False)
-        print("{0} loaded".format(self.model_path))
+        i = 0
+        while True:
+            try:
+                model_path = \
+                    os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(self.w_length)
+                print(model_path)
+                predictor = EasyPredictor(_set=INPUT_SET,
+                                          model_path=model_path,
+                                          w_length=self.w_length,
+                                          w_overlap=self.overlap,
+                                          debug=False)
+                self.predictor = predictor
+                print("{0} loaded".format(model_path))
+                return
+            except os.error:
+                print("Model doesn't exist")
+                if self.predictor is not None:
+                    break
+                else:
+                    i += 1
+                    if i >= len(WINDOW_LENGTHS):
+                        break
+                    self.w_length = WINDOW_LENGTHS[i]
+        print("Loading model has failed")
+        sys.exit(-1)
+
 
     def get_log_file_name(self):
         # participant_window_YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
@@ -273,7 +291,7 @@ class QwertyWidget(QWidget):
         self.participant_input.currentIndexChanged.connect(self.set_participant)
 
         self.w_length_input = QComboBox(self.settings_container)
-        self.w_length_input.addItems(list(map(str, TIME_WINDOWS)))
+        self.w_length_input.addItems(list(map(str, WINDOW_LENGTHS)))
         self.w_length_input.setGeometry(setting_width // 2, current_height, setting_width // 2 - MARGIN, STEP * 8)
         self.w_length_input.setFont(fontParam)
         self.w_length_input.currentIndexChanged.connect(self.set_w_length)
@@ -482,7 +500,7 @@ class QwertyWidget(QWidget):
                 # autocorrection
                 if self.is_ac_enabled and input_letter == " ":
                     last_word_fixed = self.dictionary.correct_word(last_word)
-                    if last_word_fixed != last_word:
+                    if last_word_fixed != last_word and 0 != len(last_word_fixed):
                         words[-i] = last_word_fixed
                         new_text = " ".join(words)
                         self.input_display.setText(new_text)

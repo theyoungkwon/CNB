@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import numpy
 
@@ -17,7 +18,10 @@ class Recorder:
         print("Recording samples to file: " + file_name)
         self.samples = []
         self._dir = _dir
-        self.full_name = self._dir + "/" + FILE_LOCATION + self.subdir + self.file_name
+        full_dir = self._dir + "/" + FILE_LOCATION + self.subdir
+        self.full_name = full_dir + self.file_name
+        if not os.path.exists(full_dir):
+            os.makedirs(full_dir)
 
     def start(self):
         pass
