@@ -51,7 +51,8 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 # TODO parse directory and get names
 PARTICIPANT_LIST = [
     "kirill",
-    "young"
+    "young",
+    "kirillpen"
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -115,6 +116,7 @@ class QwertyWidget(QWidget):
                     if i >= len(WINDOW_LENGTHS):
                         break
                     self.w_length = WINDOW_LENGTHS[i]
+                    self.w_length_input.setCurrentIndex(i)
         print("Loading model has failed")
         sys.exit(-1)
 
@@ -208,7 +210,7 @@ class QwertyWidget(QWidget):
 
         # enable autocorrect
         ac_label = QLabel(self.settings_container)
-        fontParam.setPointSize(STEP * 4)
+        fontParam.setPointSize(STEP * 3)
         ac_label.setGeometry(setting_width // 2, 0, STEP * 30, STEP * 10)
         ac_label.setFont(fontParam)
         ac_label.setText("Autocorrect:")
@@ -227,6 +229,7 @@ class QwertyWidget(QWidget):
         self.pred_checkbox.setChecked(self.is_pred_enabled)
         self.pred_checkbox.stateChanged.connect(self.set_pred)
         self.pred_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 14, checkbox_size, checkbox_size)
+        fontParam.setPointSize(4 * STEP)
 
         # reset button
         self.reset_button = QPushButton(self.settings_container)
@@ -482,6 +485,13 @@ class QwertyWidget(QWidget):
                 if input_letter == "<":
                     # delete last character
                     self.input_display.setText(self.input_display.text()[:-1])
+                elif input_letter == "<<":
+                    # delete last word
+                    words = self.input_display.text().split(" ")
+                    while len(words) > 0 and 0 == len(words[-1]):
+                        words = words[-1]
+                    words = " ".join(words) + " "
+                    self.input_display.setText(words)
                 else:
                     # append input
                     self.input_display.setText(self.input_display.text() + input_letter)

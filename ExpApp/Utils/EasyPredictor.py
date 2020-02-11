@@ -30,6 +30,7 @@ class EasyPredictor:
         self.w_length = w_length
         self.w_overlap = int(w_overlap * self.w_length)
         self.stack = deque(maxlen=self.w_length)
+        self.model.predict(np.zeros((1, self.w_length, self.width, 1)), batch_size=KERAS_BATCH_SIZE)
 
     def predict(self):
         start_time = time()
