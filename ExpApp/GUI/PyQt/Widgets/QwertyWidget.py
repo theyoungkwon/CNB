@@ -12,6 +12,7 @@ from ExpApp.Utils import IMUUtils
 
 # from ExpApp.Utils.DummyPredictor import EasyPredictor
 from ExpApp.Utils.EasyPredictor import EasyPredictor
+from ExpApp.Utils.PhraseSelector import PhraseSelector
 from ExpApp.Utils.VKeyboard import VKeyboard
 from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS
 from ExpApp.Utils.Dictionary import Dictionary
@@ -32,7 +33,7 @@ KEY_W = STEP * 20
 KEY_H = STEP * 20
 KEY_M = STEP * 2
 ROW_OFFSET = KEY_W // 2.5
-KEY_EXTENSION = int(KEY_W * 1.5)
+KEY_EXTENSION = int(KEY_W * 2)
 PICKER_THICKNESS = STEP / 2
 
 KEY_HIGHLIGHT_PALETTE = [
@@ -52,7 +53,8 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 PARTICIPANT_LIST = [
     "kirill",
     "young",
-    "kirillpen"
+    "kirillpen",
+    "kirillblack",
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -97,7 +99,8 @@ class QwertyWidget(QWidget):
         while True:
             try:
                 model_path = \
-                    os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(self.w_length)
+                    os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(
+                        self.w_length)
                 print(model_path)
                 predictor = EasyPredictor(_set=INPUT_SET,
                                           model_path=model_path,
@@ -119,7 +122,6 @@ class QwertyWidget(QWidget):
                     self.w_length_input.setCurrentIndex(i)
         print("Loading model has failed")
         sys.exit(-1)
-
 
     def get_log_file_name(self):
         # participant_window_YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
@@ -326,8 +328,10 @@ class QwertyWidget(QWidget):
         self.load_model()
 
     def set_w_length(self):
-        self.w_length = int(self.w_length_input.currentText())
-        self.load_model()
+        new_width = int(self.w_length_input.currentText())
+        if self.w_length != new_width:
+            self.w_length = new_width
+            self.load_model()
 
     def set_angle(self):
         self.angle_range = self.angle_input.value()
@@ -408,18 +412,18 @@ class QwertyWidget(QWidget):
         passed_columns = self._columns - self.selected_column
 
         dst_from_right = key_selection_range - tip_position
-        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * KEY_W:
+        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * (KEY_W + KEY_M) \
+                and self.selected_column > 0:
             self.selected_column -= 1
             self.input_letter = ""
             self.predictor.reset()
 
         dst_from_left = tip_position
-        if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M):
+        if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M) \
+                and self.selected_column < self._columns - 1:
             self.selected_column += 1
             self.input_letter = ""
             self.predictor.reset()
-
-        self.selected_column = min(self._columns - 1, max(0, self.selected_column))
 
     def paintEvent(self, event):
 
@@ -470,7 +474,6 @@ class QwertyWidget(QWidget):
         self.yaw = yaw
 
     def receive_data(self, data):
-
         self.handle_imu(data[8:-1])
         gesture = self.predictor.handle_emg(data[:8])
         if gesture is not None:
@@ -487,10 +490,8 @@ class QwertyWidget(QWidget):
                     self.input_display.setText(self.input_display.text()[:-1])
                 elif input_letter == "<<":
                     # delete last word
-                    words = self.input_display.text().split(" ")
-                    while len(words) > 0 and 0 == len(words[-1]):
-                        words = words[-1]
-                    words = " ".join(words) + " "
+                    words = self.input_display.text().split(" ")[:-1]
+                    words = " ".join(words)
                     self.input_display.setText(words)
                 else:
                     # append input
@@ -517,7 +518,7 @@ class QwertyWidget(QWidget):
 
                 # update predictions
                 if self.is_pred_enabled:
-                    predictions = self.dictionary.predict_word(last_word)
+                    predictions = self.dictionary.predict_corrected_word(last_word)
                     for j in range(3):
                         self.suggestion_labels[j].setText("")
                     j = 0
@@ -551,4 +552,5 @@ if __name__ == '__main__':
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     ex = QwertyWidget()
+    print(PhraseSelector().select_word())
     sys.exit(app.exec_())
