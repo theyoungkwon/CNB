@@ -12,7 +12,7 @@ from ExpApp.Utils import IMUUtils
 
 # from ExpApp.Utils.DummyPredictor import EasyPredictor
 from ExpApp.Utils.EasyPredictor import EasyPredictor
-from ExpApp.Utils.PhraseSelector import PhraseSelector
+from ExpApp.Utils.MyInputBox import MyInputBox
 from ExpApp.Utils.VKeyboard import VKeyboard
 from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS
 from ExpApp.Utils.Dictionary import Dictionary
@@ -64,7 +64,7 @@ class QwertyWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.is_ac_enabled = True
+        self.is_ac_enabled = False
         self.is_pred_enabled = True
         self.angle_range = ANGLE_RANGE
         self.gesture = None
@@ -131,10 +131,11 @@ class QwertyWidget(QWidget):
 
     def init_communicators(self):
         self.communicator = Communicate()
+        self.imu_communicator = Communicate()
         my_data_loop = threading.Thread(daemon=True,
                                         name='my_data_loop',
                                         target=self.data_send_loop,
-                                        args=(self.receive_data,))
+                                        args=(self.receive_data, self.receive_imu))
         my_data_loop.start()
 
     def init_ui(self):
@@ -143,14 +144,9 @@ class QwertyWidget(QWidget):
         self.setGeometry(80, 80, MAX_W, MAX_H)
 
         # input line
-        self.input_display = QLineEdit(self)
-        self.input_display.setText("")
+        self.input_display = MyInputBox(self)
         self.input_display.setGeometry(MARGIN, MARGIN, MAX_W - MARGIN * 2, STEP * 14)
-        self.input_display.setStyleSheet("background: none")
-        self.input_display.setFocus()
-        fontParam = self.input_display.font()
-        fontParam.setPointSize(8 * STEP)
-        self.input_display.setFont(fontParam)
+        fontParam = self.font()
 
         # suggestions area
         keyboard_width = self._columns * (KEY_W + KEY_M) + KEY_EXTENSION + self._rows * ROW_OFFSET - KEY_M * 2
@@ -200,7 +196,7 @@ class QwertyWidget(QWidget):
         self.settings_container = QLabel(self)
         self.settings_container.setGeometry(MARGIN * 2 + keyboard_width,
                                             self.input_display.height() + int(1.5 * MARGIN),
-                                            MAX_W - keyboard_width - 3 * MARGIN,
+                                            MAX_W - keyboard_width - 2 * MARGIN,
                                             MAX_H - int(3.5 * MARGIN))
         setting_width = self.settings_container.width()
 
@@ -308,11 +304,14 @@ class QwertyWidget(QWidget):
         self.record_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
         self.record_button.setStyleSheet(button_style + "background: white")
         self.record_button.setFont(fontParam)
-        self.record_button.clicked.connect(lambda: self.logger.stop())
+        self.record_button.clicked.connect(lambda: self.write_log())
         current_height += MARGIN // 2 + self.reset_button.height()
 
         self.show()
-        self.input_display.setFocus()
+
+    def write_log(self):
+        self.logger.stop()
+        self.logger.record_log(self.input_display.log)
 
     def set_ac(self):
         self.is_ac_enabled = self.ac_checkbox.isChecked()
@@ -357,9 +356,7 @@ class QwertyWidget(QWidget):
 
     def reset(self, yaw=None):
         self.reset_imu(yaw)
-        self.logger = MyoKeyLogger(self.get_log_file_name())
         self.predictor.reset()
-        self.input_display.setText("")
         for suggestion_label in self.suggestion_labels:
             suggestion_label.setText("")
 
@@ -463,9 +460,11 @@ class QwertyWidget(QWidget):
             self.gesture_holder.setStyleSheet("background: url(" + path + ") no-repeat center center fixed; "
                                                                           "background-color: white;")
 
-    def data_send_loop(self, add_data_callback_func):
-        self.communicator.data_signal.connect(add_data_callback_func)
-        EMGConnector(self.communicator)
+    def data_send_loop(self, emg_callback, imu_callback):
+        self.communicator.data_signal.connect(emg_callback)
+        self.imu_communicator.data_signal.connect(imu_callback)
+        EMGConnector(communicator=self.communicator,
+                     imu_communicator=self.imu_communicator)
 
     def handle_imu(self, imu_array):
         yaw, pitch, roll = IMUUtils.handleIMUArray(imu_array, 360)
@@ -473,8 +472,11 @@ class QwertyWidget(QWidget):
             self.reset_imu(yaw)
         self.yaw = yaw
 
+    def receive_imu(self, imu):
+        self.handle_imu(imu)
+        self.update()
+
     def receive_data(self, data):
-        self.handle_imu(data[8:-1])
         gesture = self.predictor.handle_emg(data[:8])
         if gesture is not None:
             self.gesture = gesture
@@ -541,7 +543,7 @@ class QwertyWidget(QWidget):
                             self.suggestion_labels[i].setText("")
                     self.predictor.reset()
 
-        self.update()
+            self.update()
 
 
 def except_hook(cls, exception, traceback):
@@ -552,5 +554,4 @@ if __name__ == '__main__':
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     ex = QwertyWidget()
-    print(PhraseSelector().select_word())
     sys.exit(app.exec_())

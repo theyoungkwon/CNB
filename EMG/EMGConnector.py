@@ -8,6 +8,7 @@ import myo
 class EMGConnector:
     def __init__(self,
                  communicator=None,
+                 imu_communicator=None,
                  data_handler=None,
                  imu_handler=None,
                  imu_handlers=[],
@@ -15,10 +16,11 @@ class EMGConnector:
         myo.init("C:\\myo\\myo64.dll")
         hub = myo.Hub()
         listener = EmgCollector(communicator=communicator,
+                                imu_communicator=imu_communicator,
                                 emg_data_handler=data_handler,
                                 imu_data_handler=imu_handler,
-                                imu_handlers=[],
-                                data_handlers=[])
+                                imu_handlers=imu_handlers,
+                                data_handlers=data_handlers)
         while hub.run(listener.on_event, 500):
             pass
 
@@ -28,6 +30,7 @@ class EmgCollector(myo.DeviceListener):
     def __init__(self,
                  communicator,
                  emg_data_handler,
+                 imu_communicator=None,
                  communicators=None,
                  imu_data_handler=None,
                  imu_handlers=None,
@@ -50,6 +53,8 @@ class EmgCollector(myo.DeviceListener):
             self.data_handlers.append(emg_data_handler)
         else:
             self.data_handlers = data_handlers
+
+        self.imu_communicator = imu_communicator
 
         self.imu = []
         self.myos = {}
@@ -82,6 +87,9 @@ class EmgCollector(myo.DeviceListener):
         self.imu.extend(orientation)
         self.imu.extend(acceleration)
         self.imu.extend(gyroscope)
+        if self.imu_communicator is not None:
+            self.imu_communicator.data_signal.emit(self.imu)
+
         if self.imu_handlers and len(self.imu_handlers) > 0:
             current_index = 0
             self.imu_handlers[current_index]([orientation, acceleration, gyroscope])
