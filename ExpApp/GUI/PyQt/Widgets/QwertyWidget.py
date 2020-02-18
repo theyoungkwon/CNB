@@ -33,7 +33,7 @@ KEY_W = STEP * 20
 KEY_H = STEP * 20
 KEY_M = STEP * 2
 ROW_OFFSET = KEY_W // 2.5
-KEY_EXTENSION = int(KEY_W * 2)
+KEY_EXTENSION = int(KEY_W * 3)
 PICKER_THICKNESS = STEP / 2
 
 KEY_HIGHLIGHT_PALETTE = [
@@ -51,10 +51,11 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 
 # TODO parse directory and get names
 PARTICIPANT_LIST = [
+    "kirillpen",
     "kirill",
     "young",
-    "kirillpen",
     "kirillblack",
+    "kirillbag",
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -441,7 +442,7 @@ class QwertyWidget(QWidget):
         degree = IMUUtils.is_angle_between(yaw, self.right_yaw, self.left_yaw)  # 0-1 if inside the angle
         if degree is not None:
             self.tip_position = (1 - degree) * slider_width
-            self.tip_position = min(self.tip_position, slider_width - 20)
+            self.tip_position = max(10, min(self.tip_position, slider_width - 20))
 
         path = QPainterPath()
         path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
@@ -538,7 +539,7 @@ class QwertyWidget(QWidget):
                     words[-1] = self.suggestion_labels[self.current_suggestion].text()
                     new_text = " ".join(words)
                     if 0 != len(new_text):
-                        self.input_display.setText(new_text + " ")
+                        self.input_display.setText(new_text + " ", is_suggested=1)
                         for i in range(3):
                             self.suggestion_labels[i].setText("")
                     self.predictor.reset()

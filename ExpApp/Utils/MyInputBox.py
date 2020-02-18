@@ -91,7 +91,7 @@ class MyInputBox(QLabel):
 
     @staticmethod
     def get_log_header():
-        return "Target; Input; Time; Error rate\n"
+        return "Target; Input; Time; Error rate; Used suggestion\n"
 
     @staticmethod
     def calculate_error_rate(s1: str, s2: str):
@@ -104,14 +104,14 @@ class MyInputBox(QLabel):
 
         return errors / len(s1)
 
-    def setText(self, text: str) -> None:
+    def setText(self, text: str, is_suggested=0) -> None:
         self.input_text = text
         if len(self.input_text) == 1:
             self.is_log_recorded = False
             self.start_time = time()
         elif len(self.input_text) >= len(self.target_text) and not self.is_log_recorded:
             error_rate = self.calculate_error_rate(self.target_text, self.input_text)
-            log = f'{self.target_text};{self.input_text};{time() - self.start_time};{error_rate}'
+            log = f'{self.target_text};{self.input_text};{time() - self.start_time};{error_rate};{is_suggested}'
             self.log.append(log)
             self.is_log_recorded = True
             print(log)

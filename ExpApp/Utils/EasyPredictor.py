@@ -7,7 +7,7 @@ from tensorflow_core.python.keras.saving.save import load_model
 
 from EMG.EMGConnector import EMGConnector
 from ExpApp.Utils.datacore_constants import INPUT_SET, \
-    KERAS_BATCH_SIZE, KeyConstants, RT_LAG, RT_OVERLAP, WINDOW_LENGTHS
+    KERAS_BATCH_SIZE, RT_LAG, RT_OVERLAP, WINDOW_LENGTHS
 
 
 class EasyPredictor:
