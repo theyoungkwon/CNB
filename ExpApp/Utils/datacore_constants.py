@@ -119,6 +119,7 @@ WINDOW_LENGTHS = [
     150
 ]
 
+
 class KeyboardControl:
     MAX_SUGGESTION_VOTES = 2
     MAX_VOTES = 2
@@ -133,7 +134,7 @@ class KeyboardControl:
         ["u", "j", "m"],
         ["i", "k", " "],
         ["o", "l", " "],
-        ["p", "<", " "],
+        ["p", "<<", "<"],
     ]
 
     gesture_config_def = {
@@ -147,6 +148,7 @@ class KeyboardControl:
 
 IMG_X = 8  # number if channels define the matrix width
 IMG_Y = TC_E - TC_B  # matrix height
+
 
 class Layer:
     filters = 0
@@ -187,4 +189,3 @@ class KeyConstants:
     EEPOCHS = 10
     TOTAL_CHANNELS = 19  # 8 EMG | 10 IMU | 1 TS
     RT_LAG = 6
-

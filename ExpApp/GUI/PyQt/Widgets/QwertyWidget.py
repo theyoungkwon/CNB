@@ -12,6 +12,7 @@ from ExpApp.Utils import IMUUtils
 
 # from ExpApp.Utils.DummyPredictor import EasyPredictor
 from ExpApp.Utils.EasyPredictor import EasyPredictor
+from ExpApp.Utils.MyInputBox import MyInputBox
 from ExpApp.Utils.VKeyboard import VKeyboard
 from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS
 from ExpApp.Utils.Dictionary import Dictionary
@@ -32,7 +33,7 @@ KEY_W = STEP * 20
 KEY_H = STEP * 20
 KEY_M = STEP * 2
 ROW_OFFSET = KEY_W // 2.5
-KEY_EXTENSION = int(KEY_W * 1.5)
+KEY_EXTENSION = int(KEY_W * 3)
 PICKER_THICKNESS = STEP / 2
 
 KEY_HIGHLIGHT_PALETTE = [
@@ -50,8 +51,11 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 
 # TODO parse directory and get names
 PARTICIPANT_LIST = [
+    "kirillpen",
     "kirill",
-    "young"
+    "young",
+    "kirillblack",
+    "kirillbag",
 ]
 
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
@@ -61,7 +65,7 @@ class QwertyWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.is_ac_enabled = True
+        self.is_ac_enabled = False
         self.is_pred_enabled = True
         self.angle_range = ANGLE_RANGE
         self.gesture = None
@@ -96,7 +100,8 @@ class QwertyWidget(QWidget):
         while True:
             try:
                 model_path = \
-                    os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(self.w_length)
+                    os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(
+                        self.w_length)
                 print(model_path)
                 predictor = EasyPredictor(_set=INPUT_SET,
                                           model_path=model_path,
@@ -115,9 +120,9 @@ class QwertyWidget(QWidget):
                     if i >= len(WINDOW_LENGTHS):
                         break
                     self.w_length = WINDOW_LENGTHS[i]
+                    self.w_length_input.setCurrentIndex(i)
         print("Loading model has failed")
         sys.exit(-1)
-
 
     def get_log_file_name(self):
         # participant_window_YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
@@ -127,10 +132,11 @@ class QwertyWidget(QWidget):
 
     def init_communicators(self):
         self.communicator = Communicate()
+        self.imu_communicator = Communicate()
         my_data_loop = threading.Thread(daemon=True,
                                         name='my_data_loop',
                                         target=self.data_send_loop,
-                                        args=(self.receive_data,))
+                                        args=(self.receive_data, self.receive_imu))
         my_data_loop.start()
 
     def init_ui(self):
@@ -139,14 +145,9 @@ class QwertyWidget(QWidget):
         self.setGeometry(80, 80, MAX_W, MAX_H)
 
         # input line
-        self.input_display = QLineEdit(self)
-        self.input_display.setText("")
+        self.input_display = MyInputBox(self)
         self.input_display.setGeometry(MARGIN, MARGIN, MAX_W - MARGIN * 2, STEP * 14)
-        self.input_display.setStyleSheet("background: none")
-        self.input_display.setFocus()
-        fontParam = self.input_display.font()
-        fontParam.setPointSize(8 * STEP)
-        self.input_display.setFont(fontParam)
+        fontParam = self.font()
 
         # suggestions area
         keyboard_width = self._columns * (KEY_W + KEY_M) + KEY_EXTENSION + self._rows * ROW_OFFSET - KEY_M * 2
@@ -196,7 +197,7 @@ class QwertyWidget(QWidget):
         self.settings_container = QLabel(self)
         self.settings_container.setGeometry(MARGIN * 2 + keyboard_width,
                                             self.input_display.height() + int(1.5 * MARGIN),
-                                            MAX_W - keyboard_width - 3 * MARGIN,
+                                            MAX_W - keyboard_width - 2 * MARGIN,
                                             MAX_H - int(3.5 * MARGIN))
         setting_width = self.settings_container.width()
 
@@ -208,7 +209,7 @@ class QwertyWidget(QWidget):
 
         # enable autocorrect
         ac_label = QLabel(self.settings_container)
-        fontParam.setPointSize(STEP * 4)
+        fontParam.setPointSize(STEP * 3)
         ac_label.setGeometry(setting_width // 2, 0, STEP * 30, STEP * 10)
         ac_label.setFont(fontParam)
         ac_label.setText("Autocorrect:")
@@ -227,6 +228,7 @@ class QwertyWidget(QWidget):
         self.pred_checkbox.setChecked(self.is_pred_enabled)
         self.pred_checkbox.stateChanged.connect(self.set_pred)
         self.pred_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 14, checkbox_size, checkbox_size)
+        fontParam.setPointSize(4 * STEP)
 
         # reset button
         self.reset_button = QPushButton(self.settings_container)
@@ -303,11 +305,14 @@ class QwertyWidget(QWidget):
         self.record_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
         self.record_button.setStyleSheet(button_style + "background: white")
         self.record_button.setFont(fontParam)
-        self.record_button.clicked.connect(lambda: self.logger.stop())
+        self.record_button.clicked.connect(lambda: self.write_log())
         current_height += MARGIN // 2 + self.reset_button.height()
 
         self.show()
-        self.input_display.setFocus()
+
+    def write_log(self):
+        self.logger.stop()
+        self.logger.record_log(self.input_display.log)
 
     def set_ac(self):
         self.is_ac_enabled = self.ac_checkbox.isChecked()
@@ -323,8 +328,10 @@ class QwertyWidget(QWidget):
         self.load_model()
 
     def set_w_length(self):
-        self.w_length = int(self.w_length_input.currentText())
-        self.load_model()
+        new_width = int(self.w_length_input.currentText())
+        if self.w_length != new_width:
+            self.w_length = new_width
+            self.load_model()
 
     def set_angle(self):
         self.angle_range = self.angle_input.value()
@@ -350,9 +357,7 @@ class QwertyWidget(QWidget):
 
     def reset(self, yaw=None):
         self.reset_imu(yaw)
-        self.logger = MyoKeyLogger(self.get_log_file_name())
         self.predictor.reset()
-        self.input_display.setText("")
         for suggestion_label in self.suggestion_labels:
             suggestion_label.setText("")
 
@@ -405,18 +410,18 @@ class QwertyWidget(QWidget):
         passed_columns = self._columns - self.selected_column
 
         dst_from_right = key_selection_range - tip_position
-        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * KEY_W:
+        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * (KEY_W + KEY_M) \
+                and self.selected_column > 0:
             self.selected_column -= 1
             self.input_letter = ""
             self.predictor.reset()
 
         dst_from_left = tip_position
-        if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M):
+        if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M) \
+                and self.selected_column < self._columns - 1:
             self.selected_column += 1
             self.input_letter = ""
             self.predictor.reset()
-
-        self.selected_column = min(self._columns - 1, max(0, self.selected_column))
 
     def paintEvent(self, event):
 
@@ -437,7 +442,7 @@ class QwertyWidget(QWidget):
         degree = IMUUtils.is_angle_between(yaw, self.right_yaw, self.left_yaw)  # 0-1 if inside the angle
         if degree is not None:
             self.tip_position = (1 - degree) * slider_width
-            self.tip_position = min(self.tip_position, slider_width - 20)
+            self.tip_position = max(10, min(self.tip_position, slider_width - 20))
 
         path = QPainterPath()
         path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
@@ -456,9 +461,11 @@ class QwertyWidget(QWidget):
             self.gesture_holder.setStyleSheet("background: url(" + path + ") no-repeat center center fixed; "
                                                                           "background-color: white;")
 
-    def data_send_loop(self, add_data_callback_func):
-        self.communicator.data_signal.connect(add_data_callback_func)
-        EMGConnector(self.communicator)
+    def data_send_loop(self, emg_callback, imu_callback):
+        self.communicator.data_signal.connect(emg_callback)
+        self.imu_communicator.data_signal.connect(imu_callback)
+        EMGConnector(communicator=self.communicator,
+                     imu_communicator=self.imu_communicator)
 
     def handle_imu(self, imu_array):
         yaw, pitch, roll = IMUUtils.handleIMUArray(imu_array, 360)
@@ -466,9 +473,11 @@ class QwertyWidget(QWidget):
             self.reset_imu(yaw)
         self.yaw = yaw
 
-    def receive_data(self, data):
+    def receive_imu(self, imu):
+        self.handle_imu(imu)
+        self.update()
 
-        self.handle_imu(data[8:-1])
+    def receive_data(self, data):
         gesture = self.predictor.handle_emg(data[:8])
         if gesture is not None:
             self.gesture = gesture
@@ -482,6 +491,11 @@ class QwertyWidget(QWidget):
                 if input_letter == "<":
                     # delete last character
                     self.input_display.setText(self.input_display.text()[:-1])
+                elif input_letter == "<<":
+                    # delete last word
+                    words = self.input_display.text().split(" ")[:-1]
+                    words = " ".join(words)
+                    self.input_display.setText(words)
                 else:
                     # append input
                     self.input_display.setText(self.input_display.text() + input_letter)
@@ -507,7 +521,7 @@ class QwertyWidget(QWidget):
 
                 # update predictions
                 if self.is_pred_enabled:
-                    predictions = self.dictionary.predict_word(last_word)
+                    predictions = self.dictionary.predict_corrected_word(last_word)
                     for j in range(3):
                         self.suggestion_labels[j].setText("")
                     j = 0
@@ -525,12 +539,12 @@ class QwertyWidget(QWidget):
                     words[-1] = self.suggestion_labels[self.current_suggestion].text()
                     new_text = " ".join(words)
                     if 0 != len(new_text):
-                        self.input_display.setText(new_text + " ")
+                        self.input_display.setText(new_text + " ", is_suggested=1)
                         for i in range(3):
                             self.suggestion_labels[i].setText("")
                     self.predictor.reset()
 
-        self.update()
+            self.update()
 
 
 def except_hook(cls, exception, traceback):
