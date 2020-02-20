@@ -1,12 +1,15 @@
-import autocomplete
+import sys
+sys.path.insert(1, './yd_auto_complete')
+from __init__ import *
+from autocomplete import *
 from autocorrect import Speller
 import copy
 
 
 class Dictionary:
 
-    def __init__(self) -> None:
-        autocomplete.load()
+    def __init__(self,load_path=None) -> None:
+        load(load_path)
         self.speller = Speller()
         super().__init__()
         self.checking_char_dict2list = {
@@ -22,7 +25,7 @@ class Dictionary:
         }
 
     def predict_word(self, first_word="", second_word="") -> []:
-        preds = autocomplete.predict(first_word, second_word, top_n=3)
+        preds = predict(first_word, second_word, top_n=3)
         result = []
         for prediction in preds:
             result.append(prediction[0])
@@ -35,7 +38,7 @@ class Dictionary:
         return self.checking_char_dict2list[word]
 
     def predict_corrected_word(self, word="") -> []:
-        preds = autocomplete.predict(first_word=word, second_word="", top_n=3)
+        preds = predict(first_word=word, second_word="", top_n=3)
         result = []
         # if preds list is not empty
         if len(preds) != 0:
@@ -49,7 +52,7 @@ class Dictionary:
                 for checking_char in checking_char_list:
                     word_l = list(word)
                     word_l[-i] = checking_char
-                    temp_preds = autocomplete.predict(first_word="".join(word_l), second_word="", top_n=3)
+                    temp_preds = predict(first_word="".join(word_l), second_word="", top_n=3)
                     if len(temp_preds) > 0:
                         for prediction in temp_preds:
                             result.append(prediction[0])
@@ -58,7 +61,7 @@ class Dictionary:
 
 
 def main() -> None:
-    a = Dictionary()
+    a = Dictionary('big_mackenzie2')
     print("TESTING:: Dictionary.predict_word(I, shl) // Dictionary.predict_corrected_word(I, shl)")
     print(a.predict_word("I", "shl"))
     print(a.predict_corrected_word("shl"))
@@ -72,6 +75,46 @@ def main() -> None:
     print(a.predict_corrected_word("xh"))
 
     print(a.predict_corrected_word("weqt"))
+
+    ##### Example Phrases #####
+    # flashing red light means stop
+    # dashing through the snow
+    # please provide your date of birth
+    # the opposing team is over there
+    # obligations must be met first
+    # prevailing wind from the east
+    # I am going to a music lesson
+    # please keep this confidential
+    # it is very windy today
+
+    ##### prediction below #####
+    print(a.predict_word("flashing", "re"))
+    print(a.predict_word("light", "me" ))
+    print(a.predict_word("dashing", "th"))
+    print(a.predict_word("the", "sn"))
+    print(a.predict_word("please", "pr"))
+    print(a.predict_word("your", "da"))
+    print(a.predict_word("opposing", "te"))
+    print(a.predict_word("obligations", "mu"))
+    print(a.predict_word("met", "fi"))
+    print(a.predict_word("prevailing", "wi"))
+    print(a.predict_word("music", "le"))
+    print(a.predict_word("please", "ke"))
+    print(a.predict_word("very", "wi"))
+
+    print(a.predict_word("fl",""))
+    print(a.predict_word("li",""))
+    print(a.predict_word("da",""))
+    print(a.predict_word("th",""))
+    print(a.predict_word("pl",""))
+    print(a.predict_word("yo",""))
+    print(a.predict_word("op",""))
+    print(a.predict_word("ob",""))
+    print(a.predict_word("me",""))
+    print(a.predict_word("pr",""))
+    print(a.predict_word("mu",""))
+    print(a.predict_word("pl",""))
+    print(a.predict_word("ve",""))
 
 if __name__ == "__main__":
     main()
