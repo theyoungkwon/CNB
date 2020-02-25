@@ -39,6 +39,8 @@ PAUSE_GRAPH = "Pause graph"
 
 matplotlib.use("Qt4Agg")
 
+elem_style = "border: 1px outset grey; border-radius: 4px; border-style: outset; height: 32px; font-size: 16px"
+
 
 class CustomMainWindow(QtWidgets.QMainWindow):
 
@@ -99,23 +101,35 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_frame.setLayout(self.control_panel_layout)
         self.main_layout.addWidget(self.control_panel_frame, cpr, graph_col_span, 1, 3)
         self.is_paused = False
+
+        # Default font for text elements
+        label = QLabel()
+        font = label.font()
+        font.setPointSize(12)
+        font.setItalic(True)
+        label.setFont(font)
+
         if True:
             # Pause button
             self.pause_button = QPushButton(PAUSE_GRAPH)
+            self.pause_button.setStyleSheet(elem_style)
             self.pause_button.clicked.connect(lambda: self.pause_graphs())
             self.control_panel_layout.addWidget(self.pause_button, cpr, 0, 1, 3)
             cpr += 1
 
             # Record panel
             self.record_button = QPushButton('Record')
+            self.record_button.setStyleSheet(elem_style)
             self.record_button.clicked.connect(lambda: self.start_record_())
             self.record_time_input = QDoubleSpinBox()
+            self.record_time_input.setStyleSheet(elem_style)
             self.record_count = 1
             self.record_time_input.setValue(self.exp_params.record_duration)
             self.record_time_input.setSingleStep(0.1)
             self.record_time_input.setMaximum(MAX_RECORD_DURATION)
             self.record_time_input.valueChanged.connect(self.set_record_time)
             self.record_countdown = QLabel("")
+            self.record_countdown.setFont(font)
             self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
             self.control_panel_layout.addWidget(self.record_countdown, cpr, 1, 1, 1)
             self.control_panel_layout.addWidget(self.record_button, cpr, 2, 1, 1)
@@ -131,9 +145,12 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             cpr += 1
             # Subject id
             self.exp_subject_id_prefix_input = QLineEdit()
+            self.exp_subject_id_prefix_input.setStyleSheet(elem_style)
             self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
             self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
-            self.control_panel_layout.addWidget(QLabel("User: "), cpr, 0, 1, 1)
+            label = QLabel("User: ")
+            label.setFont(font)
+            self.control_panel_layout.addWidget(label, cpr, 0, 1, 1)
             self.control_panel_layout.addWidget(self.exp_subject_id_prefix_input, cpr, 1, 1, 2)
             cpr += 1
             # Gender
