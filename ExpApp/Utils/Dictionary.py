@@ -1,11 +1,12 @@
 import autocomplete
 from autocorrect import Speller
-import copy
 
 
 class Dictionary:
 
     def __init__(self) -> None:
+        with open('../../data/PhraseSets/big_mackenzie2.txt', 'r') as myfile:
+            autocomplete.models.train_models(myfile.read())
         autocomplete.load()
         self.speller = Speller()
         super().__init__()
