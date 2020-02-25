@@ -6,8 +6,7 @@ import numpy as np
 from tensorflow_core.python.keras.saving.save import load_model
 
 from EMG.EMGConnector import EMGConnector
-from ExpApp.Utils.datacore_constants import INPUT_SET, \
-    KERAS_BATCH_SIZE, RT_LAG, RT_OVERLAP, WINDOW_LENGTHS
+from ExpApp.Utils.datacore_constants import *
 
 
 class EasyPredictor:
@@ -36,6 +35,7 @@ class EasyPredictor:
         start_time = time()
         emg_data = np.asarray(self.stack).reshape((1, self.w_length, self.width, 1))
         emg_data = np.asarray(emg_data).astype(np.float32)
+        emg_data = scale_input(emg_data)
         y_pred = [np.argmax(y) for y in self.model.predict(emg_data, batch_size=KERAS_BATCH_SIZE)]
         self.predicted = self._set[y_pred[0]]
         if self.debug:

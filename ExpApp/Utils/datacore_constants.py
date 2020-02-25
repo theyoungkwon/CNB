@@ -97,11 +97,9 @@ SET7 = [
 
 INPUT_SET = [
     "fist",
-    "thumb",
     "point",
     "two",
     "three",
-    "four",
     "palm"
 ]
 
@@ -109,9 +107,16 @@ TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
 C_INTERVAL = 40  # classification interval every C_INTERVAL samples
 KERAS_BATCH_SIZE = 5
-KERAS_EPOCHS = 10
+KERAS_EPOCHS = 8
 RT_OVERLAP = 0.9
-RT_LAG = 20
+RT_LAG = 10
+EMG_MAX = 128.
+
+
+def scale_input(x):
+    x /= EMG_MAX
+    return x
+
 
 WINDOW_LENGTHS = [
     100,

@@ -46,9 +46,9 @@ class MyInputBox(QLabel):
         self.clear_button.clicked.connect(self.clear_input)
 
         self.phrase_button = QPushButton(self)
-        self.phrase_button.setText("New phrase")
+        self.phrase_button.setText("Ref phrase")
         self.phrase_button.setStyleSheet(button_style)
-        self.phrase_button.clicked.connect(self.update_target_phrase)
+        self.phrase_button.clicked.connect(self.set_reference)
 
         self.word_button = QPushButton(self)
         self.word_button.setText("New word")
@@ -58,6 +58,11 @@ class MyInputBox(QLabel):
         self.start_time = 0
         self.log = []
         self.is_log_recorded = False
+
+    def set_reference(self):
+        self.input_text = ""
+        self.target_text = "the weather should become better today"
+        self.markup_text()
 
     def update_target_word(self):
         self.input_text = ""
