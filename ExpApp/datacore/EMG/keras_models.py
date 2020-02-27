@@ -137,7 +137,8 @@ def tests():
     subjects = [
         # "young",
         # "kirill",
-        "kirillpen",
+        # "kirillpen",
+        "kirillumbr",
         # "kirillblack",
         # "kirillbag",
     ]

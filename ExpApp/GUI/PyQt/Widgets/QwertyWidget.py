@@ -51,6 +51,7 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
 
 # TODO parse directory and get names
 PARTICIPANT_LIST = [
+    "kirillumbr",
     "kirillpen",
     "kirill",
     "young",
@@ -104,7 +105,6 @@ class QwertyWidget(QWidget):
                 model_path = \
                     os.path.dirname(__file__) + "/../../../datacore/models/" + self.participant + "_" + str(
                         self.w_length)
-                print(model_path)
                 predictor = EasyPredictor(_set=INPUT_SET,
                                           model_path=model_path,
                                           w_length=self.w_length,
@@ -112,6 +112,7 @@ class QwertyWidget(QWidget):
                                           debug=False)
                 self.predictor = predictor
                 print("{0} loaded".format(model_path))
+                self.logger = MyoKeyLogger(self.get_log_file_name())
                 return
             except os.error:
                 print("Model doesn't exist")
@@ -473,10 +474,12 @@ class QwertyWidget(QWidget):
             self.tip_position = max(KEY_W // 2,
                                     min(self.tip_position, slider_width - KEY_W // 2))
             column_shift = self.calculate_current_column()
+            self.logger.record_column(self.selected_column)
             if column_shift == 0:
                 self.tip_position += self.last_column_shift * self.delta
             else:
                 self.last_column_shift = column_shift
+            self.logger.record_imu(self.tip_position)
 
             path = QPainterPath()
             path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
@@ -502,6 +505,7 @@ class QwertyWidget(QWidget):
 
     def handle_imu(self, imu_array):
         yaw, pitch, roll = IMUUtils.handleIMUArray(imu_array, 360)
+        # yaw = imu_array[3]
         if not self.imu_set:
             self.reset_imu(yaw)
         self.yaw = yaw
@@ -533,8 +537,8 @@ class QwertyWidget(QWidget):
                     # append input
                     self.input_display.setText(self.input_display.text() + input_letter)
                 self.predictor.reset()
+                self.update()
 
-                words = []
                 last_word = ""
                 i = 1
                 if self.is_pred_enabled or self.is_ac_enabled:

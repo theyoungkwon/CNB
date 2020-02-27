@@ -4,8 +4,8 @@ import autocomplete
 class Dictionary:
 
     def __init__(self) -> None:
-        with open('../../data/PhraseSets/big_mackenzie2.txt', 'r') as myfile:
-            autocomplete.models.train_models(myfile.read())
+        # with open('../../data/PhraseSets/big_mackenzie2.txt', 'r') as myfile:
+        #     autocomplete.models.train_models(myfile.read())
         autocomplete.load()
         super().__init__()
         self.checking_char_dict2list = {
