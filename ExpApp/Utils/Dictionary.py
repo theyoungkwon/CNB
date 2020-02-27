@@ -1,5 +1,4 @@
 import autocomplete
-from autocorrect import Speller
 
 
 class Dictionary:
@@ -8,7 +7,6 @@ class Dictionary:
         with open('../../data/PhraseSets/big_mackenzie2.txt', 'r') as myfile:
             autocomplete.models.train_models(myfile.read())
         autocomplete.load()
-        self.speller = Speller()
         super().__init__()
         self.checking_char_dict2list = {
             'q': ['a', 'z'], 'a': ['q', 'z'], 'z': ['a', 'q'],
@@ -28,9 +26,6 @@ class Dictionary:
         for prediction in preds:
             result.append(prediction[0])
         return result
-
-    def correct_word(self, word="") -> "":
-        return self.speller.autocorrect_word(word)
 
     def get_checking_char_list(self, word="") -> []:
         return self.checking_char_dict2list[word]

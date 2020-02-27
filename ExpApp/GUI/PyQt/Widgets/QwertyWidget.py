@@ -65,7 +65,6 @@ class QwertyWidget(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.is_ac_enabled = False
         self.is_pred_enabled = True
         self.angle_range = ANGLE_RANGE
         self.gesture = None
@@ -78,6 +77,9 @@ class QwertyWidget(QWidget):
         self._rows = len(self.vkeyboard.key_config[0])
         self._columns = len(self.vkeyboard.key_config)
         self.selected_column = self._columns - 1
+        self.delta = 0
+        self.last_column_shift = 0
+        self.is_sticky = False
         self.init_ui()
         self.right_yaw = 6
         self.left_yaw = 2
@@ -207,17 +209,17 @@ class QwertyWidget(QWidget):
         self.gesture_holder.setStyleSheet("background: transparent;")
         current_height = self.gesture_holder.height() + MARGIN // 2
 
-        # enable autocorrect
-        ac_label = QLabel(self.settings_container)
+        # enable sticky
         fontParam.setPointSize(STEP * 3)
-        ac_label.setGeometry(setting_width // 2, 0, STEP * 30, STEP * 10)
-        ac_label.setFont(fontParam)
-        ac_label.setText("Autocorrect:")
-        self.ac_checkbox = QCheckBox(self.settings_container)
-        self.ac_checkbox.setChecked(self.is_ac_enabled)
-        self.ac_checkbox.stateChanged.connect(self.set_ac)
         checkbox_size = 14
-        self.ac_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 4, checkbox_size, checkbox_size)
+        sticky_label = QLabel(self.settings_container)
+        sticky_label.setGeometry(setting_width // 2, 0, STEP * 30, STEP * 10)
+        sticky_label.setFont(fontParam)
+        sticky_label.setText("Sticky Mid:")
+        self.sticky_checkbox = QCheckBox(self.settings_container)
+        self.sticky_checkbox.setChecked(self.is_sticky)
+        self.sticky_checkbox.stateChanged.connect(self.set_sticky)
+        self.sticky_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 4, checkbox_size, checkbox_size)
 
         # enable predictions
         pred_label = QLabel(self.settings_container)
@@ -314,8 +316,10 @@ class QwertyWidget(QWidget):
         self.logger.stop()
         self.logger.record_log(self.input_display.log)
 
-    def set_ac(self):
-        self.is_ac_enabled = self.ac_checkbox.isChecked()
+    def set_sticky(self):
+        self.is_sticky = self.sticky_checkbox.isChecked()
+        if not self.is_sticky:
+            self.delta = 0
 
     def set_pred(self):
         self.is_pred_enabled = self.pred_checkbox.isChecked()
@@ -354,6 +358,8 @@ class QwertyWidget(QWidget):
         self.right_yaw = yaw
         self.left_yaw = (yaw + self.angle_range) % 360
         self.imu_set = True
+        self.selected_column = self._columns - 1
+        self.tip_position = self.slidebar.width() - (KEY_EXTENSION + KEY_W) // 2
 
     def reset(self, yaw=None):
         self.reset_imu(yaw)
@@ -404,24 +410,46 @@ class QwertyWidget(QWidget):
             else:
                 suggestion_box.setStyleSheet(button_style + "background: white")
 
-    def get_current_column(self):
+    def sticky_midcol(self, dst_right, dst_left):
+        if not self.is_sticky:
+            return
+        passed_columns = self._columns - self.selected_column
+        if dst_right is not None:
+            self.delta = (KEY_EXTENSION + KEY_W) // 2 - (dst_right - passed_columns * (KEY_W + KEY_M) - KEY_M)
+            self.tip_position += self.delta
+        elif dst_left is not None:
+            self.delta = (KEY_EXTENSION + KEY_W) // 2 - (dst_left - self.selected_column * (KEY_W + KEY_M) - KEY_M)
+            self.tip_position -= self.delta
+
+    # 0 - didn't change; -1 decreased; +1 increased
+    def calculate_current_column(self) -> int:
         key_selection_range = self.keyboard_container.width()
         tip_position = self.tip_position
         passed_columns = self._columns - self.selected_column
+        delta = self.delta
+        shift = self.last_column_shift
 
         dst_from_right = key_selection_range - tip_position
-        if dst_from_right > KEY_EXTENSION + KEY_W + passed_columns * (KEY_W + KEY_M) \
+        if dst_from_right + delta * ((1 + shift) / 2) > \
+                KEY_EXTENSION + KEY_W + passed_columns * (KEY_W + KEY_M) \
                 and self.selected_column > 0:
             self.selected_column -= 1
+            self.sticky_midcol(dst_from_right, None)
             self.input_letter = ""
             self.predictor.reset()
+            return -1
 
         dst_from_left = tip_position
-        if dst_from_left > KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M) \
+        if dst_from_left - delta * ((1 - shift) / 2) > \
+                KEY_EXTENSION + KEY_W + self.selected_column * (KEY_W + KEY_M) \
                 and self.selected_column < self._columns - 1:
             self.selected_column += 1
+            self.sticky_midcol(None, dst_from_left)
             self.input_letter = ""
             self.predictor.reset()
+            return +1
+
+        return 0
 
     def paintEvent(self, event):
 
@@ -442,18 +470,23 @@ class QwertyWidget(QWidget):
         degree = IMUUtils.is_angle_between(yaw, self.right_yaw, self.left_yaw)  # 0-1 if inside the angle
         if degree is not None:
             self.tip_position = (1 - degree) * slider_width
-            self.tip_position = max(10, min(self.tip_position, slider_width - 20))
+            self.tip_position = max(KEY_W // 2,
+                                    min(self.tip_position, slider_width - KEY_W // 2))
+            column_shift = self.calculate_current_column()
+            if column_shift == 0:
+                self.tip_position += self.last_column_shift * self.delta
+            else:
+                self.last_column_shift = column_shift
 
-        path = QPainterPath()
-        path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
-        painter.fillPath(path, Qt.black)
-        self.slidebar.setPixmap(self.slider_pixmap)
+            path = QPainterPath()
+            path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
+            painter.fillPath(path, Qt.black)
+            self.slidebar.setPixmap(self.slider_pixmap)
 
-        # highlight column
-        self.get_current_column()
-        self.vkeyboard.get_block_by_index(self.selected_column)
-        self.highlight_suggestion_area()
-        self.highlight_column()
+            # highlight column
+            self.vkeyboard.get_block_by_index(self.selected_column)
+            self.highlight_suggestion_area()
+            self.highlight_column()
 
         # gesture image
         if self.gesture is not None:
@@ -511,14 +544,6 @@ class QwertyWidget(QWidget):
                         i += 1
                         last_word = words[-i]
 
-                # autocorrection
-                if self.is_ac_enabled and input_letter == " ":
-                    last_word_fixed = self.dictionary.correct_word(last_word)
-                    if last_word_fixed != last_word and 0 != len(last_word_fixed):
-                        words[-i] = last_word_fixed
-                        new_text = " ".join(words)
-                        self.input_display.setText(new_text)
-
                 # update predictions
                 if self.is_pred_enabled:
                     predictions = self.dictionary.predict_corrected_word(last_word)
@@ -538,13 +563,13 @@ class QwertyWidget(QWidget):
                     words = self.input_display.text().split(" ")
                     words[-1] = self.suggestion_labels[self.current_suggestion].text()
                     new_text = " ".join(words)
-                    if 0 != len(new_text):
+                    if 0 != len(new_text) and new_text != " ":
                         self.input_display.setText(new_text + " ", is_suggested=1)
                         for i in range(3):
                             self.suggestion_labels[i].setText("")
                     self.predictor.reset()
 
-            self.update()
+        self.update()
 
 
 def except_hook(cls, exception, traceback):
