@@ -58,6 +58,7 @@ class MyInputBox(QLabel):
         self.start_time = 0
         self.log = []
         self.is_log_recorded = False
+        self.count = 1
 
     def set_reference(self):
         self.input_text = ""
@@ -119,8 +120,22 @@ class MyInputBox(QLabel):
             log = f'{self.target_text};{self.input_text};{time() - self.start_time};{error_rate};{is_suggested}'
             self.log.append(log)
             self.is_log_recorded = True
-            print(log)
+            print(f'{self.count}: ' + log)
+            self.count += 1
         self.markup_text()
+
+    def get_log(self):
+        avg_time = 0
+        avg_error = 0
+        for entry in self.log:
+            avg_time += float(entry.split(";")[2])
+            avg_error += float(entry.split(";")[3])
+        self.count -= 1
+        print(f"Average wpm: {60 / (avg_time / self.count)}; average error rate: {avg_error / self.count}")
+        self.count = 1
+        res = self.log
+        self.log = []
+        return res
 
     def text(self):
         return self.input_text

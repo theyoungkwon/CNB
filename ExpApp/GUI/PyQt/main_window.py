@@ -8,7 +8,7 @@ from time import time
 import os
 
 from ExpApp.Utils.KeyboardLogger import KeyboardLogger
-from ExpApp.Utils.datacore_constants import SET6
+from ExpApp.Utils.datacore_constants import SET6, PARTICIPANT_LIST
 
 path_fix = os.path.dirname(os.path.abspath(__file__)) + "/"
 
@@ -153,7 +153,8 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             # Subject id
             self.exp_subject_id_prefix_input = QLineEdit()
             self.exp_subject_id_prefix_input.setStyleSheet(elem_style)
-            self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
+            self.exp_subject_id_prefix_input.setText(PARTICIPANT_LIST[0])
+            self.set_exp_subject()
             self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
             label = QLabel("User: ")
             label.setFont(font)

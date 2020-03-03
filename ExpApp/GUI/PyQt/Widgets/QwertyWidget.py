@@ -14,7 +14,7 @@ from ExpApp.Utils import IMUUtils
 from ExpApp.Utils.EasyPredictor import EasyPredictor
 from ExpApp.Utils.MyInputBox import MyInputBox
 from ExpApp.Utils.VKeyboard import VKeyboard
-from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS
+from ExpApp.Utils.datacore_constants import INPUT_SET, KeyboardControl, RT_OVERLAP, WINDOW_LENGTHS, PARTICIPANT_LIST
 from ExpApp.Utils.Dictionary import Dictionary
 from ExpApp.Utils.MyoKeyLogger import MyoKeyLogger
 
@@ -23,7 +23,7 @@ class Communicate(QObject):
     data_signal = pyqtSignal(list)
 
 
-ANGLE_RANGE = 45  # 20 .. 90
+ANGLE_RANGE = 55  # 20 .. 90
 
 STEP = 4
 MARGIN = STEP * 10
@@ -33,7 +33,7 @@ KEY_W = STEP * 20
 KEY_H = STEP * 20
 KEY_M = STEP * 2
 ROW_OFFSET = KEY_W // 2.5
-KEY_EXTENSION = int(KEY_W * 3)
+KEY_EXTENSION = int(KEY_W * 1.5)
 PICKER_THICKNESS = STEP / 2
 
 KEY_HIGHLIGHT_PALETTE = [
@@ -49,16 +49,6 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
     "#3df9ff",
 ]
 
-# TODO parse directory and get names
-PARTICIPANT_LIST = [
-    "kirillumbr",
-    "kirillpen",
-    "kirill",
-    "young",
-    "kirillblack",
-    "kirillbag",
-]
-
 button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
 
 
@@ -67,6 +57,7 @@ class QwertyWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.is_pred_enabled = True
+        self.record_counter = 1
         self.angle_range = ANGLE_RANGE
         self.gesture = None
         self.max_votes = KeyboardControl.MAX_VOTES
@@ -129,7 +120,7 @@ class QwertyWidget(QWidget):
 
     def get_log_file_name(self):
         # participant_window_YYYY.MM.DD_HH.MM.SS_VOTES_INTERVAL
-        return self.participant + "_" + str(self.w_length) \
+        return self.participant + "_" + str(self.record_counter) + "_" + str(self.w_length) \
                + "_" + datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") \
                + "_" + str(self.max_votes) + "_" + str(self.overlap)
 
@@ -231,7 +222,7 @@ class QwertyWidget(QWidget):
         self.pred_checkbox.setChecked(self.is_pred_enabled)
         self.pred_checkbox.stateChanged.connect(self.set_pred)
         self.pred_checkbox.setGeometry(setting_width - MARGIN - checkbox_size, STEP * 14, checkbox_size, checkbox_size)
-        fontParam.setPointSize(4 * STEP)
+        fontParam.setPointSize(3 * STEP)
 
         # reset button
         self.reset_button = QPushButton(self.settings_container)
@@ -315,7 +306,9 @@ class QwertyWidget(QWidget):
 
     def write_log(self):
         self.logger.stop()
-        self.logger.record_log(self.input_display.log)
+        self.logger.record_log(self.input_display.get_log())
+        self.logger = MyoKeyLogger(self.get_log_file_name())
+        self.record_counter += 1
 
     def set_sticky(self):
         self.is_sticky = self.sticky_checkbox.isChecked()
@@ -505,7 +498,6 @@ class QwertyWidget(QWidget):
 
     def handle_imu(self, imu_array):
         yaw, pitch, roll = IMUUtils.handleIMUArray(imu_array, 360)
-        # yaw = imu_array[3]
         if not self.imu_set:
             self.reset_imu(yaw)
         self.yaw = yaw
@@ -513,6 +505,15 @@ class QwertyWidget(QWidget):
     def receive_imu(self, imu):
         self.handle_imu(imu)
         self.update()
+
+    @staticmethod
+    def is_valid_suggestion(suggestion, last_word):
+        if 0 == len(suggestion) or \
+                len(suggestion) < len(last_word) - 1 or \
+                suggestion == " " or \
+                suggestion == "  ":
+            return False
+        return True
 
     def receive_data(self, data):
         gesture = self.predictor.handle_emg(data[:8])
@@ -565,12 +566,13 @@ class QwertyWidget(QWidget):
                 if self.suggestion_votes[self.current_suggestion] == self.max_suggestion_votes:
                     self.suggestion_votes = [0] * 3
                     words = self.input_display.text().split(" ")
-                    words[-1] = self.suggestion_labels[self.current_suggestion].text()
-                    new_text = " ".join(words)
-                    if 0 != len(new_text) and new_text != " ":
-                        self.input_display.setText(new_text + " ", is_suggested=1)
-                        for i in range(3):
-                            self.suggestion_labels[i].setText("")
+                    if self.is_valid_suggestion(self.suggestion_labels[self.current_suggestion].text(), words[-1]):
+                        words[-1] = self.suggestion_labels[self.current_suggestion].text()
+                        new_text = " ".join(words)
+                        if 0 != len(new_text) and new_text != " ":
+                            self.input_display.setText(new_text + " ", is_suggested=1)
+                    for i in range(3):
+                        self.suggestion_labels[i].setText("")
                     self.predictor.reset()
 
         self.update()
