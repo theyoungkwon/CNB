@@ -67,7 +67,7 @@ class EasyPredictor:
 
     def reset(self):
         self.stack.clear()
-        self.lag_after_reset = self.lag_after_reset
+        self.lag_counter = self.lag_after_reset
         self.predicted = None
 
 

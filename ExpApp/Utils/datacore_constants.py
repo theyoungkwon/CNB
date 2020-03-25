@@ -108,8 +108,8 @@ TC_E = 400  # trial cutoff end
 C_INTERVAL = 40  # classification interval every C_INTERVAL samples
 KERAS_BATCH_SIZE = 5
 KERAS_EPOCHS = 8
-RT_OVERLAP = 0.9
-RT_LAG = 10
+RT_OVERLAP = 0.5
+RT_LAG = 20
 EMG_MAX = 128.
 
 
@@ -139,7 +139,7 @@ class KeyboardControl:
         ["u", "j", "m"],
         ["i", "k", " "],
         ["o", "l", " "],
-        ["p", "<<", "<"],
+        ["p", "<", "<"],
     ]
 
     gesture_config_def = {
@@ -194,3 +194,48 @@ class KeyConstants:
     EEPOCHS = 10
     TOTAL_CHANNELS = 19  # 8 EMG | 10 IMU | 1 TS
     RT_LAG = 6
+
+
+PARTICIPANT_LIST = [
+    "serkan",
+    "yolpen",
+    "yol",
+    "yal",
+    "yalpen",
+    "yalumbr",
+    "kirillpen",
+    "kirillumbr2",
+    "yolumbr",
+    "moinumbr",
+    "moin",
+    "arthur",
+    "arthurumbr",
+    "arthurpen",
+    "youngpen",
+    "carlospen",
+    "serkanumbr",
+    "serkanpen",
+    "dimitrispen",
+    "moinpen",
+    "carlosumbr",
+    "carlos",
+    "ehsanumbr",
+    "panosumbr",
+    "panospen",
+    "panos",
+    "vlasis",
+    "vlasispen",
+    "vlasisumbr",
+    "ehsan",
+    "young",
+    "youngumbr",
+    "ehsanpen",
+    "paulumbr",
+    "paulpen",
+    "paul",
+    "kirillumbr",
+    "kirill",
+    "young",
+    "kirillblack",
+    "kirillbag",
+]

@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
+from tensorflow_core.python.keras.callbacks import EarlyStopping
 from tensorflow_core.python.keras.layers.convolutional import Conv2D
 from tensorflow_core.python.keras.layers.convolutional_recurrent import ConvLSTM2D
 from tensorflow_core.python.keras.layers.core import Flatten, Dense, Dropout
@@ -106,8 +107,10 @@ def get_pen_cnn(input_data, num_labels):
 
 
 def test_model(model, x_train, x_test, y_train, y_test, epochs=KERAS_EPOCHS):
+    es = EarlyStopping(monitor='val_accuracy', mode='max', patience=3)
+    callbacks = []
     model.fit(x_train, y_train, validation_data=(x_test, to_categorical(y_test)), batch_size=KERAS_BATCH_SIZE,
-              epochs=epochs,
+              epochs=epochs, callbacks=callbacks,
               verbose=1)
     y_pred = model.predict(x_test * 1.)
     y_pred = [np.argmax(y, axis=None, out=None) for y in y_pred]
@@ -135,13 +138,18 @@ def test_model_new(model, x_train, x_test, y_train, y_test, epochs=KERAS_EPOCHS)
 
 def tests():
     subjects = [
+        # "ehsanpen",
         # "young",
         # "kirill",
         # "kirillpen",
-        "kirillumbr",
+        # "kirillumbr2",
+        # "paul",
+        # "paulumbr",
         # "kirillblack",
         # "kirillbag",
     ]
+
+    subjects = [PARTICIPANT_LIST[0]]
 
     _set = INPUT_SET
 
