@@ -1,6 +1,5 @@
 import matplotlib
 import numpy as np
-from PyQt5.QtCore import QThread
 
 from ExpApp.Utils.constants import X_LIM, DPI, REDRAW_INTERVAL, BACKGROUND_COLOR
 from ExpApp.Utils.constants import CHANNELS_NUMBER
@@ -11,6 +10,17 @@ from matplotlib.animation import TimedAnimation
 from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
+graph_palette_default = [
+    '#52d5fe',  # line
+    '#93a0f2',  # tail
+    '#93a0f2',  # head
+]
+
+graph_palette_black = [
+    '#000000',  # line
+    '#000000',  # tail
+    '#000000',  # head
+]
 
 class GraphWidget(FigureCanvas, TimedAnimation):
 
@@ -34,9 +44,10 @@ class GraphWidget(FigureCanvas, TimedAnimation):
 
         self.subplots = []
         for i in range(CHANNELS_NUMBER):
-            line = Line2D([], [], color='#8B0000')
-            line_tail = Line2D([], [], color='#CD0000', linewidth=2)
-            line_head = Line2D([], [], color='#FF4500', marker='o', markeredgecolor='r')
+            palette = graph_palette_black
+            line = Line2D([], [], color=palette[0], linewidth=3)
+            line_tail = Line2D([], [], color=palette[1], linewidth=4)
+            line_head = Line2D([], [], color=palette[2], marker='o', markeredgecolor='b')
 
             subplot = self.fig.add_subplot(CHANNELS_NUMBER, 1, i + 1)
             subplot.add_line(line)
@@ -68,7 +79,6 @@ class GraphWidget(FigureCanvas, TimedAnimation):
     def addData(self, value):
         self.addedData.append(value)
         self.sample_num = self.sample_num + 1
-
 
     def _step(self, *args):
         try:

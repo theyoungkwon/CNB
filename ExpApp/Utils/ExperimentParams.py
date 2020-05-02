@@ -23,23 +23,15 @@ class ExperimentParams:
 
     def to_file_name(self):
         return self.name_prefix + DELIM \
-               + self.experiment + DELIM \
                + str(self.exp_id) + DELIM \
                + str(self.record_duration) + DELIM \
                + self.timestamp + DELIM \
-               + self.gender + DELIM \
-               + str(self.age) + DELIM \
-               + self.electrodes + DELIM \
                + self.subject_id
 
     def from_file_name(self, file_name):
         self.name_prefix, \
-            self.experiment, \
             self.exp_id, \
             self.record_duration, \
             self.timestamp, \
-            self.gender, \
-            self.age, \
-            self.electrodes, \
             self.subject_id \
             = file_name.split(DELIM)

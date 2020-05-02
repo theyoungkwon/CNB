@@ -8,6 +8,7 @@ from time import time
 import os
 
 from ExpApp.Utils.KeyboardLogger import KeyboardLogger
+from ExpApp.Utils.datacore_constants import SET6, PARTICIPANT_LIST
 
 path_fix = os.path.dirname(os.path.abspath(__file__)) + "/"
 
@@ -38,6 +39,8 @@ RESUME_GRAPH = 'Resume graph'
 PAUSE_GRAPH = "Pause graph"
 
 matplotlib.use("Qt4Agg")
+
+elem_style = "border: 1px outset grey; border-radius: 4px; border-style: outset; height: 32px; font-size: 16px"
 
 
 class CustomMainWindow(QtWidgets.QMainWindow):
@@ -99,23 +102,35 @@ class CustomMainWindow(QtWidgets.QMainWindow):
         self.control_panel_frame.setLayout(self.control_panel_layout)
         self.main_layout.addWidget(self.control_panel_frame, cpr, graph_col_span, 1, 3)
         self.is_paused = False
+
+        # Default font for text elements
+        label = QLabel()
+        font = label.font()
+        font.setPointSize(12)
+        font.setItalic(True)
+        label.setFont(font)
+
         if True:
             # Pause button
             self.pause_button = QPushButton(PAUSE_GRAPH)
+            self.pause_button.setStyleSheet(elem_style)
             self.pause_button.clicked.connect(lambda: self.pause_graphs())
             self.control_panel_layout.addWidget(self.pause_button, cpr, 0, 1, 3)
             cpr += 1
 
             # Record panel
             self.record_button = QPushButton('Record')
+            self.record_button.setStyleSheet(elem_style)
             self.record_button.clicked.connect(lambda: self.start_record_())
             self.record_time_input = QDoubleSpinBox()
+            self.record_time_input.setStyleSheet(elem_style)
             self.record_count = 1
             self.record_time_input.setValue(self.exp_params.record_duration)
             self.record_time_input.setSingleStep(0.1)
             self.record_time_input.setMaximum(MAX_RECORD_DURATION)
             self.record_time_input.valueChanged.connect(self.set_record_time)
             self.record_countdown = QLabel("")
+            self.record_countdown.setFont(font)
             self.control_panel_layout.addWidget(self.record_time_input, cpr, 0)
             self.control_panel_layout.addWidget(self.record_countdown, cpr, 1, 1, 1)
             self.control_panel_layout.addWidget(self.record_button, cpr, 2, 1, 1)
@@ -123,53 +138,64 @@ class CustomMainWindow(QtWidgets.QMainWindow):
 
             # Experiment setup panel
             # File name
-            self.exp_name_prefix_input = QLineEdit()
-            self.exp_name_prefix_input.setText(self.exp_params.name_prefix)
-            self.exp_name_prefix_input.editingFinished.connect(self.set_exp_name)
-            self.control_panel_layout.addWidget(QLabel("File Name Prefix: "), cpr, 0, 1, 1)
-            self.control_panel_layout.addWidget(self.exp_name_prefix_input, cpr, 1, 1, 2)
+            self.prefix_input = QComboBox()
+            self.prefix_input.setStyleSheet(elem_style)
+            gesture_set = SET6  # all gestures
+            self.prefix_input.addItems(gesture_set)
+            self.exp_params.name_prefix = gesture_set[0]
+            self.prefix_input.currentIndexChanged.connect(self.set_exp_name)
+            label = QLabel("File Name Prefix: ")
+            label.setFont(font)
+
+            self.control_panel_layout.addWidget(label, cpr, 0, 1, 1)
+            self.control_panel_layout.addWidget(self.prefix_input, cpr, 1, 1, 2)
             cpr += 1
             # Subject id
             self.exp_subject_id_prefix_input = QLineEdit()
-            self.exp_subject_id_prefix_input.setText(self.exp_params.subject_id)
+            self.exp_subject_id_prefix_input.setStyleSheet(elem_style)
+            self.exp_subject_id_prefix_input.setText(PARTICIPANT_LIST[0])
+            self.set_exp_subject()
             self.exp_subject_id_prefix_input.editingFinished.connect(self.set_exp_subject)
-            self.control_panel_layout.addWidget(QLabel("User: "), cpr, 0, 1, 1)
+            label = QLabel("User: ")
+            label.setFont(font)
+            self.control_panel_layout.addWidget(label, cpr, 0, 1, 1)
             self.control_panel_layout.addWidget(self.exp_subject_id_prefix_input, cpr, 1, 1, 2)
             cpr += 1
-            # Gender
-            self.control_panel_layout.addWidget(QLabel("Gender:"), cpr, 0, 1, 1)
-            self.exp_m_input = QRadioButton("male")
-            self.exp_m_input.setChecked(self.exp_params.gender == self.exp_m_input.text())
-            self.exp_m_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_m_input.text(), checked))
-            self.exp_f_input = QRadioButton("female")
-            self.exp_f_input.setChecked(self.exp_params.gender == self.exp_f_input.text())
-            self.exp_f_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_f_input.text(), checked))
-            self.control_panel_layout.addWidget(self.exp_m_input, cpr, 1, 1, 1)
-            self.control_panel_layout.addWidget(self.exp_f_input, cpr, 2, 1, 1)
-            cpr += 1
-            # Age
-            self.control_panel_layout.addWidget(QLabel("Age:"), cpr, 0, 1, 1)
-            self.exp_age_input = QSpinBox()
-            self.exp_age_input.setValue(self.exp_params.age)
-            self.exp_age_input.editingFinished.connect(self.set_exp_age)
-            self.control_panel_layout.addWidget(self.exp_age_input, cpr, 1, 1, 2)
-            cpr += 1
-            # Electrodes
-            self.exp_electrodes_input = QLineEdit()
-            self.exp_electrodes_input.setText(self.exp_params.electrodes)
-            self.exp_electrodes_input.editingFinished.connect(self.set_electrodes)
-            self.control_panel_layout.addWidget(QLabel("Electrodes:"), cpr, 0, 1, 1)
-            self.control_panel_layout.addWidget(self.exp_electrodes_input, cpr, 1, 1, 2)
-            cpr += 1
+            if self.device == Device.EEG:
+                # Gender
+                self.control_panel_layout.addWidget(QLabel("Gender:"), cpr, 0, 1, 1)
+                self.exp_m_input = QRadioButton("male")
+                self.exp_m_input.setChecked(self.exp_params.gender == self.exp_m_input.text())
+                self.exp_m_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_m_input.text(), checked))
+                self.exp_f_input = QRadioButton("female")
+                self.exp_f_input.setChecked(self.exp_params.gender == self.exp_f_input.text())
+                self.exp_f_input.toggled.connect(lambda checked: self.set_exp_gender(self.exp_f_input.text(), checked))
+                self.control_panel_layout.addWidget(self.exp_m_input, cpr, 1, 1, 1)
+                self.control_panel_layout.addWidget(self.exp_f_input, cpr, 2, 1, 1)
+                cpr += 1
+                # Age
+                self.control_panel_layout.addWidget(QLabel("Age:"), cpr, 0, 1, 1)
+                self.exp_age_input = QSpinBox()
+                self.exp_age_input.setValue(self.exp_params.age)
+                self.exp_age_input.editingFinished.connect(self.set_exp_age)
+                self.control_panel_layout.addWidget(self.exp_age_input, cpr, 1, 1, 2)
+                cpr += 1
+                # Electrodes
+                self.exp_electrodes_input = QLineEdit()
+                self.exp_electrodes_input.setText(self.exp_params.electrodes)
+                self.exp_electrodes_input.editingFinished.connect(self.set_electrodes)
+                self.control_panel_layout.addWidget(QLabel("Electrodes:"), cpr, 0, 1, 1)
+                self.control_panel_layout.addWidget(self.exp_electrodes_input, cpr, 1, 1, 2)
+                cpr += 1
 
-            # Experiment selection
-            self.exp_selection_box = QComboBox()
-            self.exp_selection_box.addItems(self.options)
-            self.exp_selection_box.currentIndexChanged.connect(self.set_exp)
-            self.exp_run_button = QPushButton("Run")
-            self.exp_run_button.clicked.connect(self.exp_run)
-            self.control_panel_layout.addWidget(self.exp_run_button, cpr, 0, 1, 1)
-            self.control_panel_layout.addWidget(self.exp_selection_box, cpr, 1, 1, 2)
+                # Experiment selection
+                self.exp_selection_box = QComboBox()
+                self.exp_selection_box.addItems(self.options)
+                self.exp_selection_box.currentIndexChanged.connect(self.set_exp)
+                self.exp_run_button = QPushButton("Run")
+                self.exp_run_button.clicked.connect(self.exp_run)
+                self.control_panel_layout.addWidget(self.exp_run_button, cpr, 0, 1, 1)
+                self.control_panel_layout.addWidget(self.exp_selection_box, cpr, 1, 1, 2)
 
         if self.device == Device.EMG:
             self.setStyleSheet("background-color: " + BACKGROUND_COLOR + ";")
@@ -242,7 +268,7 @@ class CustomMainWindow(QtWidgets.QMainWindow):
             self.exp_params.gender = value
 
     def set_exp_name(self):
-        self.exp_params.name_prefix = self.exp_name_prefix_input.text()
+        self.exp_params.name_prefix = self.prefix_input.currentText()
 
     def set_exp_subject(self):
         self.exp_params.subject_id = self.exp_subject_id_prefix_input.text()
