@@ -3,6 +3,7 @@ import os
 import sys
 import threading
 
+from time import time
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -88,6 +89,7 @@ class QwertyWidget(QWidget):
         self.load_model()
         self.dictionary = Dictionary()
         self.init_communicators()
+        self.start_time = None
 
     def load_model(self):
         i = 0
@@ -517,6 +519,7 @@ class QwertyWidget(QWidget):
 
     def receive_data(self, data):
         gesture = self.predictor.handle_emg(data[:8])
+        self.logger.record_emg(data[:8])
         if gesture is not None:
             self.gesture = gesture
             input_letter = self.vkeyboard.record_vote(self.gesture)
@@ -537,6 +540,11 @@ class QwertyWidget(QWidget):
                 else:
                     # append input
                     self.input_display.setText(self.input_display.text() + input_letter)
+                    if self.start_time is None:
+                        self.start_time = time()
+                    else:
+                        print(str((time() - self.start_time) * 1000))
+                        self.start_time = time()
                 self.predictor.reset()
                 self.update()
 
