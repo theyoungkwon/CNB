@@ -74,6 +74,11 @@ SET5 = [  # social + numbers + grabs
 ]
 
 SET6 = [  # everything
+    "00000",  # palm
+    "11111",  # fist
+    "10000",  # thumb
+    "01000",  # point
+    "10100",  # respect
     "fist",
     "palm",
     "thumb",
@@ -103,13 +108,21 @@ INPUT_SET = [
     "palm"
 ]
 
+BUZZ_SET = [
+    "00000",  # palm
+    "11111",  # fist
+    "10000",  # thumb
+    "01000",  # point
+    "10100",  # respect
+]
+
 TC_B = 100  # trial cutoff beginning
 TC_E = 400  # trial cutoff end
 C_INTERVAL = 40  # classification interval every C_INTERVAL samples
 KERAS_BATCH_SIZE = 5
 KERAS_EPOCHS = 8
 RT_OVERLAP = 0.5
-RT_LAG = 20
+RT_LAG = 0
 EMG_MAX = 128.
 
 
@@ -119,6 +132,7 @@ def scale_input(x):
 
 
 WINDOW_LENGTHS = [
+    50,
     100,
     125,
     150
@@ -197,45 +211,55 @@ class KeyConstants:
 
 
 PARTICIPANT_LIST = [
-    "serkan",
+    "kirill_nb",
+
+    "kirillpen",
+    "kirillumbr2",
+    "kirill",
+
     "yolpen",
+    "yolumbr",
     "yol",
+
     "yal",
     "yalpen",
     "yalumbr",
-    "kirillpen",
-    "kirillumbr2",
-    "yolumbr",
+
     "moinumbr",
+    "moinpen",
     "moin",
+
     "arthur",
     "arthurumbr",
     "arthurpen",
-    "youngpen",
-    "carlospen",
+
     "serkanumbr",
     "serkanpen",
-    "dimitrispen",
-    "moinpen",
+    "serkan",
+
     "carlosumbr",
     "carlos",
-    "ehsanumbr",
+    "carlospen",
+
     "panosumbr",
     "panospen",
     "panos",
+
     "vlasis",
     "vlasispen",
     "vlasisumbr",
+
     "ehsan",
-    "young",
-    "youngumbr",
     "ehsanpen",
+    "ehsanumbr",
+
+    "young",
+    "youngpen",
+    "youngumbr",
+
     "paulumbr",
     "paulpen",
     "paul",
-    "kirillumbr",
-    "kirill",
-    "young",
-    "kirillblack",
-    "kirillbag",
+
+    "kirillpen",
 ]

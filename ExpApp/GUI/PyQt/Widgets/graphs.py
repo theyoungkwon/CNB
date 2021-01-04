@@ -44,7 +44,7 @@ class GraphWidget(FigureCanvas, TimedAnimation):
 
         self.subplots = []
         for i in range(CHANNELS_NUMBER):
-            palette = graph_palette_black
+            palette = graph_palette_default
             line = Line2D([], [], color=palette[0], linewidth=3)
             line_tail = Line2D([], [], color=palette[1], linewidth=4)
             line_head = Line2D([], [], color=palette[2], marker='o', markeredgecolor='b')

@@ -53,8 +53,8 @@ class DataLoader:
                     else:
                         files_for_label[label] = 1
 
-            if label in files_for_label:
-                print("{0} files read for label: {1}".format(files_for_label[label], label))
+            if self.verbose and label in files_for_label:
+                print("{0} file(s) read for label: {1}".format(files_for_label[label], label))
 
             self.data[label] = np.array(raw_data)
 
@@ -81,7 +81,8 @@ class DataLoader:
 
             y += 1
 
-    def load(self, params=None):
+    def load(self, params=None, verbose=False):
+        self.verbose = verbose
         self.handle_params(params)
         self.read_files()
         self.preprocess()

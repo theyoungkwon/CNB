@@ -1,8 +1,16 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
+
+from tensorflow_core.lite.python.interpreter import Interpreter
+from tensorflow_core.lite.python.lite import TFLiteConverter
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+import tensorflow as tf
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import metrics
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from tensorflow_core.python.keras.callbacks import EarlyStopping
 from tensorflow_core.python.keras.layers.convolutional import Conv2D
 from tensorflow_core.python.keras.layers.convolutional_recurrent import ConvLSTM2D
@@ -15,14 +23,13 @@ from tensorflow_core.python.keras.models import Sequential
 from tensorflow_core.python.keras.optimizer_v2.adam import Adam
 from tensorflow_core.python.keras.optimizer_v2.adamax import Adamax
 from tensorflow_core.python.keras.utils.np_utils import to_categorical
+from tensorflow_core.python.keras import backend
 
 from ExpApp.Utils.KeyfileMerger import KeyfileMerger
 from ExpApp.Utils.confusion_matrix_printer import plot_confusion_matrix
 from ExpApp.Utils.datacore_constants import *
 from ExpApp.datacore.DataLoader import DataLoader
-import os
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 def reshape_for_cnn(x):
@@ -107,7 +114,6 @@ def get_pen_cnn(input_data, num_labels):
 
 
 def test_model(model, x_train, x_test, y_train, y_test, epochs=KERAS_EPOCHS):
-    es = EarlyStopping(monitor='val_accuracy', mode='max', patience=3)
     callbacks = []
     model.fit(x_train, y_train, validation_data=(x_test, to_categorical(y_test)), batch_size=KERAS_BATCH_SIZE,
               epochs=epochs, callbacks=callbacks,
@@ -136,38 +142,40 @@ def test_model_new(model, x_train, x_test, y_train, y_test, epochs=KERAS_EPOCHS)
     return model, accuracy
 
 
-def tests():
-    subjects = [
-        # "ehsanpen",
-        # "young",
-        # "kirill",
-        # "kirillpen",
-        # "kirillumbr2",
-        # "paul",
-        # "paulumbr",
-        # "kirillblack",
-        # "kirillbag",
-    ]
-
+def train_models_main():
     subjects = [PARTICIPANT_LIST[0]]
 
-    _set = INPUT_SET
+    _set = BUZZ_SET
 
-    w_lengths = [125]
+    w_lengths = [WINDOW_LENGTHS[0]]
+
+    total_accuracy = 0.0
+
+    count = 0
 
     for _subj in subjects:
         for _end in w_lengths:
             params = {"end": _end, "dir": _subj, "set": _set}
+            print(f"CNN {_subj}, {_end}")
+
             x, y = DataLoader().load(params)
             x = scale_input(x)
-            print(f"CNN {_subj}, {_end}")
             x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=True)
             y_train = to_categorical(y_train)
             x_train = reshape_for_cnn(x_train)
             x_test = reshape_for_cnn(x_test)
+
             cnn = get_cnn_adv(x_train[0], len(_set))
-            model, accuracy = test_model(cnn, x_train, x_test, y_train, y_test)
-            model.save(_subj + "_" + str(_end))
+            model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
+            model_name = _subj + "_" + str(_end)
+            model.save(model_name)
+
+            count += 1
+            total_accuracy += accuracy
+
+    print("Average accuracy is " + str(total_accuracy / count))
+
+    return model_name
 
 
 def key_test():
@@ -181,9 +189,129 @@ def key_test():
     x_train = reshape_for_cnn(x_train)
     x_test = reshape_for_cnn(x_test)
     cnn = get_cnn(x_train[0], len(y_train[0]))
-    model, accuracy = test_model(cnn, x_train, x_test, y_train, y_test)
+    model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
     model.save(KeyConstants.MODEL_PATH)
 
 
+def kfold(k=5):
+    subjects = PARTICIPANT_LIST
+    w_lengths = [100, 50, 25, 5]
+
+    for _end in w_lengths:
+        print(_end)
+        for _subj in subjects:
+            # if True:  # total
+            # if _subj.find("pen") >= 0:
+            # if _subj.find("umbr") >= 0:
+            if _subj.find("pen") < 0 and _subj.find("umbr") < 0:  # fh
+                print(f"subj: {_subj} len: {_end}")
+                params = {"end": _end, "dir": _subj, "set": INPUT_SET}
+                x, y = DataLoader().load(params)
+                x = scale_input(x)
+
+                kf = KFold(n_splits=k, shuffle=True, random_state=293)
+
+                for train_index, test_index in kf.split(x):
+                    x_train, x_test = x[train_index], x[test_index]
+                    y_train, y_test = y[train_index], y[test_index]
+
+                    y_train = to_categorical(y_train)
+                    x_train = reshape_for_cnn(x_train)
+                    x_test = reshape_for_cnn(x_test)
+
+                    cnn = get_cnn_adv(x_train[0], len(INPUT_SET))
+                    model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
+                    print(accuracy)
+
+                    backend.clear_session()
+
+    pass
+
+
+def get_gcm():
+    subjects = PARTICIPANT_LIST
+
+    _set = INPUT_SET
+
+    _end = 50
+
+    cum_cm = np.zeros((len(INPUT_SET), len(INPUT_SET)))
+
+    print(f'cm for length {_end}')
+
+    count = 0
+
+    for _subj in subjects:
+        # if _subj.find("pen") >= 0:
+        # if _subj.find("umbr") >= 0:
+        if _subj.find("pen") < 0 and _subj.find("umbr") < 0:  # fh
+            count += 1
+            params = {"end": _end, "dir": _subj, "set": _set}
+            x, y = DataLoader().load(params)
+            x = scale_input(x)
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=True)
+            y_train = to_categorical(y_train)
+            x_train = reshape_for_cnn(x_train)
+            x_test = reshape_for_cnn(x_test)
+            cnn = get_cnn_adv(x_train[0], len(_set))
+            model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
+            cum_cm += cm
+            print(accuracy)
+
+    ax = plt.axes()
+    ax.ylabel = "Target"
+    mx = cum_cm
+    mx = mx / count  # normalize dat
+    disp = ConfusionMatrixDisplay(confusion_matrix=mx, display_labels=["suggestion", "top", "mid", "bottom", "rest"])
+    disp.plot(include_values=True, ax=ax, cmap='Blues')
+    plt.show()
+
+def get_tflite_from_existing_model(model_name):
+    converter = TFLiteConverter.from_keras_model_file(model_name)
+    tflite_model = converter.convert()
+    open(model_name + '.tflite', "wb").write(tflite_model)
+
+
+def get_tflite():
+    _set = INPUT_SET
+    _subj = "kirillpen"
+
+    w_lengths = [100, 50, 25, 10]
+
+    for _end in w_lengths:
+        params = {"end": _end, "dir": _subj, "set": _set}
+        x, y = DataLoader().load(params)
+        x = scale_input(x)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, shuffle=True)
+        y_train = to_categorical(y_train)
+        x_train = reshape_for_cnn(x_train)
+        x_test = reshape_for_cnn(x_test)
+        cnn = get_cnn_adv(x_train[0], len(_set))
+        model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
+        model_name = f"{_subj}_{_end}"
+        model.save(model_name)
+        converter = TFLiteConverter.from_keras_model_file(model_name)
+        tflite_model = converter.convert()
+        open(model_name + '.tflite', "wb").write(tflite_model)
+
+
+def validate_tflite(model_name):
+    interpreter = Interpreter(model_path=model_name)
+    interpreter.allocate_tensors()
+    # Get input and output tensors
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    # Test model on random input data
+    input_shape = input_details[0]['shape']
+    input_data = np.array(np.random.random_sample(input_shape), dtype=np.float32)
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+    interpreter.invoke()
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    print(output_data)  # softmax layer
+
+
 if __name__ == '__main__':
-    tests()
+    # model_name = f"{PARTICIPANT_LIST[0]}_{WINDOW_LENGTHS[0]}"
+    model_name = train_models_main()
+    get_tflite_from_existing_model(model_name)
+    validate_tflite(model_name + ".tflite")

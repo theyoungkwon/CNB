@@ -26,7 +26,7 @@ class Communicate(QObject):
 
 ANGLE_RANGE = 55  # 20 .. 90
 
-STEP = 4
+STEP = 3
 MARGIN = STEP * 10
 MAX_W = STEP * 400
 MAX_H = STEP * 135
@@ -35,7 +35,7 @@ KEY_H = STEP * 20
 KEY_M = STEP * 2
 ROW_OFFSET = KEY_W // 2.5
 KEY_EXTENSION = int(KEY_W * 1.5)
-PICKER_THICKNESS = STEP / 2
+PICKER_THICKNESS = STEP // 2
 
 KEY_HIGHLIGHT_PALETTE = [
     "#cfe1ff",
@@ -50,13 +50,17 @@ SUGGESTIONS_HIGHLIGHT_PALETTE = [
     "#3df9ff",
 ]
 
-button_style = "border: 1px outset grey; border-radius: 10px; border-style: outset;"
-
 
 class QwertyWidget(QWidget):
 
-    def __init__(self):
+    def __init__(self, ar_mode=False):
         super().__init__()
+        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_NoSystemBackground, True)
+        self.ar_mode = ar_mode
+        self.button_style = "border: 3px outset white; border-radius: 10px; border-style: outset;" + \
+                            ("color: white;" if self.ar_mode else "")
         self.is_pred_enabled = True
         self.record_counter = 1
         self.angle_range = ANGLE_RANGE
@@ -137,17 +141,26 @@ class QwertyWidget(QWidget):
 
     def init_ui(self):
 
-        self.setStyleSheet("background: white")
+        keyboard_width = self._columns * (KEY_W + KEY_M) + KEY_EXTENSION + self._rows * ROW_OFFSET - KEY_M * 2
+        self.setStyleSheet("background: " + ("transparent" if self.ar_mode else "white"))
         self.setGeometry(80, 80, MAX_W, MAX_H)
-
+        container = QLabel(self)
+        container.setGeometry(0, 0, MAX_W, MAX_H)
+        if self.ar_mode:
+            self.setGeometry(0, 0, 1920, 1080)
+            container.setGeometry(1040, 500, MAX_W, MAX_H)
         # input line
-        self.input_display = MyInputBox(self)
-        self.input_display.setGeometry(MARGIN, MARGIN, MAX_W - MARGIN * 2, STEP * 14)
+        self.input_display = MyInputBox(container, ar_mode=self.ar_mode, reset=self.reset_imu)
+        self.input_display.setGeometry(MARGIN, MARGIN, keyboard_width if self.ar_mode else (MAX_W - MARGIN * 2),
+                                       STEP * 14)
         fontParam = self.font()
 
+
+        self.input_display.setText("sm")
+
+
         # suggestions area
-        keyboard_width = self._columns * (KEY_W + KEY_M) + KEY_EXTENSION + self._rows * ROW_OFFSET - KEY_M * 2
-        self.suggestions_container = QLabel(self)
+        self.suggestions_container = QLabel(container)
         position = QRect(MARGIN, self.input_display.height() + int(1.5 * MARGIN), keyboard_width, KEY_H)
         self.suggestions_container.setGeometry(position)
         self.suggestion_labels = [QLabel] * (3)
@@ -155,7 +168,7 @@ class QwertyWidget(QWidget):
         for i in range(3):
             suggestion_box = QLabel(self.suggestions_container)
             suggestion_box.setAlignment(Qt.AlignCenter)
-            suggestion_box.setStyleSheet(button_style + "background: white")
+            suggestion_box.setStyleSheet(self.button_style + "background: white")
             suggestion_box.setText("")
             font = suggestion_box.font()
             font.setPointSize(STEP * 5)
@@ -165,11 +178,11 @@ class QwertyWidget(QWidget):
             self.suggestion_labels[i] = suggestion_box
 
         # sliding tip representing MYO orientation
-        self.slidebar = QLabel(self)
+        self.slidebar = QLabel(container)
         self.slidebar.setGeometry(MARGIN, self.input_display.height() + int(MARGIN * 4), keyboard_width, STEP * 5)
 
         # keyboard container
-        self.keyboard_container = QLabel(self)
+        self.keyboard_container = QLabel(container)
         self.keyboard_container.setGeometry(MARGIN, int(
             2.5 * MARGIN) + self.input_display.height() + self.slidebar.height() + KEY_H,
                                             keyboard_width, MAX_H - int(MARGIN * 3.5) - self.input_display.height())
@@ -181,7 +194,7 @@ class QwertyWidget(QWidget):
                     continue
                 key_button = QLabel(self.keyboard_container)
                 key_button.setAlignment(Qt.AlignCenter)
-                key_button.setStyleSheet(button_style + "background: white")
+                key_button.setStyleSheet(self.button_style + "background: transparent")
                 key_button.setText(self.vkeyboard.key_config[j][i])
                 font = key_button.font()
                 font.setPointSize(STEP * 6)
@@ -190,7 +203,7 @@ class QwertyWidget(QWidget):
                 self.keys[i * self._columns + j] = key_button
 
         # Settings container
-        self.settings_container = QLabel(self)
+        self.settings_container = QLabel(None if self.ar_mode else container)
         self.settings_container.setGeometry(MARGIN * 2 + keyboard_width,
                                             self.input_display.height() + int(1.5 * MARGIN),
                                             MAX_W - keyboard_width - 2 * MARGIN,
@@ -230,7 +243,7 @@ class QwertyWidget(QWidget):
         self.reset_button = QPushButton(self.settings_container)
         self.reset_button.setText('Reset')
         self.reset_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
-        self.reset_button.setStyleSheet(button_style + "background: white")
+        self.reset_button.setStyleSheet(self.button_style + "background: " + "transparent" if self.ar_mode else "white")
         self.reset_button.setFont(fontParam)
         self.reset_button.clicked.connect(lambda: self.reset())
         current_height += MARGIN // 3 + self.reset_button.height()
@@ -299,10 +312,14 @@ class QwertyWidget(QWidget):
         self.record_button = QPushButton(self.settings_container)
         self.record_button.setText('Record')
         self.record_button.setGeometry(MARGIN, current_height, setting_width - MARGIN * 2, MARGIN)
-        self.record_button.setStyleSheet(button_style + "background: white")
+        self.record_button.setStyleSheet(self.button_style + "background: " + "transparent" if self.ar_mode else "white")
         self.record_button.setFont(fontParam)
         self.record_button.clicked.connect(lambda: self.write_log())
         current_height += MARGIN // 2 + self.reset_button.height()
+
+        self.suggestion_labels[0].setText("small")
+        self.suggestion_labels[1].setText("smart")
+        self.suggestion_labels[2].setText("smile")
 
         self.show()
 
@@ -381,16 +398,16 @@ class QwertyWidget(QWidget):
                     continue
                 key_button = self.keys[i * self._columns + j]
                 self.set_key_geometry(i, j, key_button)
-                stylesheet = button_style + "background: "
+                stylesheet = self.button_style + "background: "
                 # current column
                 if j == self.selected_column:
                     if key_button.text() == self.input_letter:
-                        stylesheet += KEY_HIGHLIGHT_PALETTE[2]
+                        stylesheet += KEY_HIGHLIGHT_PALETTE[2] + ";"
                     else:
-                        stylesheet += KEY_HIGHLIGHT_PALETTE[self.vkeyboard.votes[i]]
+                        stylesheet += KEY_HIGHLIGHT_PALETTE[self.vkeyboard.votes[i]] + ";"
+                    if self.ar_mode: stylesheet += "color: black;"
                 else:
-                    stylesheet += "white"
-
+                    stylesheet += "transparent" if self.ar_mode else "white"
                 key_button.setStyleSheet(stylesheet)
 
     def highlight_suggestion_area(self):
@@ -402,9 +419,12 @@ class QwertyWidget(QWidget):
                     self.current_suggestion = i
                     self.suggestion_votes = [0] * 3
                 suggestion_box.setStyleSheet(
-                    button_style + "background: " + SUGGESTIONS_HIGHLIGHT_PALETTE[self.suggestion_votes[i]])
+                    self.button_style + "background: "
+                    + SUGGESTIONS_HIGHLIGHT_PALETTE[self.suggestion_votes[i]]
+                    + ";" + ("color: black" if self.ar_mode else ""))
             else:
-                suggestion_box.setStyleSheet(button_style + "background: white")
+                suggestion_box.setStyleSheet(
+                    self.button_style + "background: " + ("transparent" if self.ar_mode else "white"))
 
     def sticky_midcol(self, dst_right, dst_left):
         if not self.is_sticky:
@@ -478,7 +498,7 @@ class QwertyWidget(QWidget):
 
             path = QPainterPath()
             path.addRoundedRect(self.tip_position, 0, 20, 20, 2, 2)
-            painter.fillPath(path, Qt.black)
+            painter.fillPath(path, Qt.white if self.ar_mode else Qt.transparent)
             self.slidebar.setPixmap(self.slider_pixmap)
 
             # highlight column
@@ -490,7 +510,8 @@ class QwertyWidget(QWidget):
         if self.gesture is not None:
             path = os.path.dirname(__file__) + "/img/" + self.gesture + ".png"
             self.gesture_holder.setStyleSheet("background: url(" + path + ") no-repeat center center fixed; "
-                                                                          "background-color: white;")
+                                                                          "background-color: " + (
+                                                  "transparent;" if self.ar_mode else "white;"))
 
     def data_send_loop(self, emg_callback, imu_callback):
         self.communicator.data_signal.connect(emg_callback)
@@ -543,7 +564,7 @@ class QwertyWidget(QWidget):
                     if self.start_time is None:
                         self.start_time = time()
                     else:
-                        print(str((time() - self.start_time) * 1000))
+                        # print(str((time() - self.start_time) * 1000))
                         self.start_time = time()
                 self.predictor.reset()
                 self.update()
@@ -593,5 +614,5 @@ def except_hook(cls, exception, traceback):
 if __name__ == '__main__':
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
-    ex = QwertyWidget()
+    ex = QwertyWidget(ar_mode=True)
     sys.exit(app.exec_())

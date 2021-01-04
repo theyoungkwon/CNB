@@ -20,6 +20,7 @@ class MyoKeyLogger:
         self.times = []
         self.log_columns = []
         self.log_imu = []
+        self.log_emg = []
 
     def record_gesture(self, gesture):
         timestamp = time()
@@ -38,6 +39,10 @@ class MyoKeyLogger:
         timestamp = time()
         self.log_imu.append(f"{imu}; {timestamp}")
 
+    def record_emg(self, emg):
+        timestamp = time()
+        self.log_emg.append(f"{';'.join(map(str, emg))}; {timestamp}")
+
     def stop(self):
         total_time = (self.times[-1] - self.times[0])
         with open(SUB_DIR + self.file_name + '_gestures.csv', 'w') as f:
@@ -55,6 +60,11 @@ class MyoKeyLogger:
         with open(SUB_DIR + self.file_name + '_imu.csv', 'w') as f:
             for record in self.log_imu:
                 f.write(record + "\n")
+
+        with open(SUB_DIR + self.file_name + '_emg.csv', 'w') as f:
+            for record in self.log_emg:
+                f.write(record + "\n")
+
         print(f"Flushed log records  to the file: {self.file_name}; Total time of input: {total_time}")
 
     def record_log(self, log):
