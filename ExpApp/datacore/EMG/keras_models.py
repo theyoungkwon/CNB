@@ -166,7 +166,7 @@ def train_models_main():
             x_test = reshape_for_cnn(x_test)
 
             cnn = get_cnn_adv(x_train[0], len(_set))
-            model, accuracy, cm = test_model(cnn, x_train, x_test, y_train, y_test)
+            model, accuracy = test_model(cnn, x_train, x_test, y_train, y_test)
             model_name = _subj + "_" + str(_end)
             model.save(model_name)
 

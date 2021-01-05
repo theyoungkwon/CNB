@@ -132,7 +132,6 @@ def scale_input(x):
 
 
 WINDOW_LENGTHS = [
-    50,
     100,
     125,
     150
