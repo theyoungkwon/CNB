@@ -76,9 +76,9 @@ SET5 = [  # social + numbers + grabs
 SET6 = [  # everything
     "00000",  # palm
     "11111",  # fist
-    "10000",  # thumb
-    "01000",  # point
-    "10100",  # respect
+    "01111",  # thumb
+    "10111",  # point
+    "01011",  # respect
     "fist",
     "palm",
     "thumb",
@@ -111,9 +111,8 @@ INPUT_SET = [
 BUZZ_SET = [
     "00000",  # palm
     "11111",  # fist
-    "10000",  # thumb
-    "01000",  # point
-    "10100",  # respect
+    "01111",  # thumb
+    "10111",  # point
 ]
 
 TC_B = 100  # trial cutoff beginning
@@ -132,7 +131,7 @@ def scale_input(x):
 
 
 WINDOW_LENGTHS = [
-    100,
+    # 100,
     125,
     150
 ]
