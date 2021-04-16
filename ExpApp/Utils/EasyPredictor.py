@@ -12,11 +12,12 @@ from ExpApp.Utils.datacore_constants import *
 class EasyPredictor:
 
     def __init__(self,
-                 model_path=os.path.dirname(__file__) + "/../datacore/cnn_qwerty_debug",
+                 model_path=os.path.dirname(__file__) +
+                            f"/../datacore/models/{PARTICIPANT_LIST[0]}_{WINDOW_LENGTHS[0]}",
                  _set=INPUT_SET,
                  debug=False,
                  w_length=WINDOW_LENGTHS[0],
-                 lag_after_reset=RT_LAG,
+                 lag_after_reset=0,
                  w_overlap=RT_OVERLAP) -> None:
         super().__init__()
         self.model = load_model(model_path)
@@ -39,7 +40,7 @@ class EasyPredictor:
         y_pred = [np.argmax(y) for y in self.model.predict(emg_data, batch_size=KERAS_BATCH_SIZE)]
         self.predicted = self._set[y_pred[0]]
         if self.debug:
-            print(str((time() - start_time) * 1000) + " : " + self.predicted)
+            print(str(round((time() - start_time) * 1000)) + " : " + self.predicted)
         # removing all elements from deque except the ones for the window overlap
         while len(self.stack) > self.w_overlap:
             self.stack.popleft()
@@ -72,5 +73,5 @@ class EasyPredictor:
 
 
 if __name__ == '__main__':
-    online_predictor = EasyPredictor(_set=INPUT_SET, debug=True)
+    online_predictor = EasyPredictor(_set=BUZZ_SET, debug=True)
     EMGConnector(data_handler=online_predictor.handle_emg)

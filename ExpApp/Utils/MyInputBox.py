@@ -8,15 +8,15 @@ from time import time
 
 from ExpApp.Utils.PhraseSelector import PhraseSelector
 
-button_style = "border: 1px outset gray; border-style: outset;"
+button_style = "border: 3px outset gray; border-style: outset;"
 
-input_style = "border: 1px outset grey;" \
+input_style = "border: 3px outset grey;" \
               "border-top-left-radius: 10px;" \
               "border-bottom-left-radius: 10px;" \
               "border-style: outset;" \
               "padding-left: 10px"
 
-right_button_style = "border: 1px outset grey; " \
+right_button_style = "border: 3px outset grey; " \
                      "border-top-right-radius: 10px;" \
                      "border-bottom-right-radius: 10px;" \
                      "border-style: outset;"
@@ -25,9 +25,11 @@ right_button_style = "border: 1px outset grey; " \
 class MyInputBox(QLabel):
     buttonClicked = pyqtSignal(bool)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, ar_mode=False, reset=None):
         super(MyInputBox, self).__init__(parent)
 
+        self.ar_mode = ar_mode
+        self.reset_func = reset
         self.input_box = QTextEdit(self)
         self.input_box.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.input_box.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -36,7 +38,7 @@ class MyInputBox(QLabel):
 
         self.selector = PhraseSelector()
 
-        self.target_text = self.selector.select_word()
+        self.target_text = "smart" #self.selector.select_word()
         self.input_text = ""
         self.markup_text()
 
@@ -46,14 +48,20 @@ class MyInputBox(QLabel):
         self.clear_button.clicked.connect(self.clear_input)
 
         self.phrase_button = QPushButton(self)
-        self.phrase_button.setText("Ref phrase")
+        self.phrase_button.setText("Reset" if self.ar_mode else "Phrase")
         self.phrase_button.setStyleSheet(button_style)
         self.phrase_button.clicked.connect(self.set_reference)
 
         self.word_button = QPushButton(self)
-        self.word_button.setText("New word")
+        self.word_button.setText("Word")
         self.word_button.setStyleSheet(right_button_style)
         self.word_button.clicked.connect(self.update_target_word)
+
+        if self.ar_mode:
+            for button in [self.clear_button, self.phrase_button, self.word_button]:
+                button.setStyleSheet(
+                    button.styleSheet() + "color: white;"
+                )
 
         self.start_time = 0
         self.log = []
@@ -61,9 +69,12 @@ class MyInputBox(QLabel):
         self.count = 1
 
     def set_reference(self):
-        self.input_text = ""
-        self.target_text = "the weather should become better today"
-        self.markup_text()
+        if not self.ar_mode:
+            self.input_text = ""
+            self.target_text = "the weather should become better today"
+            self.markup_text()
+        elif callable(self.reset_func):
+            self.reset_func()
 
     def update_target_word(self):
         self.input_text = ""
@@ -142,7 +153,7 @@ class MyInputBox(QLabel):
 
     def markup_text(self):
         self.input_box.clear()
-        self.input_box.setTextColor(Qt.black)
+        self.input_box.setTextColor(Qt.white if self.ar_mode else Qt.black)
         self.input_box.insertPlainText(self.input_text)
         self.input_box.setTextColor(Qt.gray)
         self.input_box.insertPlainText(self.target_text[len(self.input_text):])

@@ -1,12 +1,12 @@
+
 import os
 
-import gumpy
+# import gumpy
 import scipy.io
 import numpy as np
 
 from ExpApp.Utils.datacore_constants import IMG_X
 
-DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../data/nina/'
 
 
 def nina(test=False, params=None):
@@ -15,7 +15,7 @@ def nina(test=False, params=None):
     wl = 200
     subject = 1
     for e in [1, 2, 3]:
-        mat = scipy.io.loadmat(DIR + "S" + str(subject) + "_E" + str(e) + "_A1.mat")
+        mat = scipy.io.loadmat("S3_E1_A1.mat")
         emg = mat["emg"][:, 1:9]
         labels = mat["restimulus"]
         curr_label = labels[0]
@@ -24,7 +24,7 @@ def nina(test=False, params=None):
                 curr_label = labels[i]
                 continue
             if i % wl == 0 and i != 0:
-                trials.append(gumpy.signal.notch(emg[i - wl:i], cutoff=50, Q=50))
+                # trials.append(gumpy.signal.notch(emg[i - wl:i], cutoff=50, Q=50))
                 # trials.append(emg[i - wl:i])
                 tr_labels.append(curr_label[0])
 
